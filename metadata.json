@@ -1,0 +1,6 @@
+{
+  "name": "AJU BOT — Faculty & Admin Academic Operations Platform",
+  "description": "Unified academic operations platform for university faculty and administration, featuring live class tracking, syllabus management, timetable coordination, and substitution approvals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
