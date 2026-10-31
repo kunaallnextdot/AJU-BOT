@@ -66,19 +66,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onSelectTab(item.id);
           onCloseMobile();
         }}
-        className={`group relative flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] transition-all ${
-          isActive ? 'font-semibold text-[#171717]' : 'font-medium text-[#404040] hover:bg-[#f7f7f5] hover:text-[#171717]'
+        className={`group relative flex w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all ${
+          isActive ? 'font-bold text-[#10233f] shadow-xs' : 'text-[#657894] hover:bg-[#f6faff] hover:text-[#10233f]'
         }`}
         style={{ backgroundColor: isActive ? currentTheme.lightHex : undefined }}
       >
-        <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'text-[#171717]' : 'text-[#525252]'}`} />
+        {isActive && (
+          <span className="absolute bottom-1.5 left-0 top-1.5 w-1 rounded-r-full" style={{ backgroundColor: currentTheme.primaryHex }} />
+        )}
+        <Icon
+          className={`h-4 w-4 shrink-0 transition-colors ${isActive ? '' : 'text-[#8494aa] group-hover:text-[#10233f]'}`}
+          style={{ color: isActive ? currentTheme.primaryHex : undefined }}
+        />
         <span className="truncate">{item.label}</span>
         {item.badge ? (
-          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-md bg-[#171717] px-1.5 text-[11px] font-bold text-white">
+          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full border border-amber-200 bg-amber-50 px-1.5 text-[10px] font-bold text-amber-700">
             {item.badge}
           </span>
-        ) : isActive ? (
-          <span className="ml-auto h-2 w-2 rounded-full" style={{ backgroundColor: currentTheme.deepHex }} />
         ) : null}
       </button>
     );
@@ -95,43 +99,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 flex w-[245px] flex-col justify-between border-r border-[#e7e7e4] bg-white transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 bottom-0 left-0 z-40 flex w-[245px] flex-col justify-between border-r border-[#dce8f7] bg-white transition-transform duration-300 ease-in-out ${
           isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         <div className="flex min-h-0 flex-col">
           {/* Brand block */}
-          <div className="px-5 pb-4 pt-5">
-            <div className="flex items-center gap-2.5">
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[15px] font-black text-white"
-                style={{ background: `linear-gradient(135deg, ${currentTheme.deepHex}, #4f8a76)` }}
-              >
-                A
+          <div className="flex h-18 items-center border-b border-[#eaf2fc] px-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-sm font-black text-white shadow-xs"
+                  style={{ background: `linear-gradient(135deg, ${currentTheme.primaryHex}, ${currentTheme.deepHex})` }}
+                >
+                  A
+                </div>
+                <span className="text-lg font-black tracking-wider" style={{ color: currentTheme.deepHex }}>
+                  AJU BOT
+                </span>
               </div>
-              <span className="text-[22px] font-bold tracking-[-0.02em] text-[#171717]">AJU BOT</span>
+              <p className="ml-9 mt-0.5 text-[10px] font-bold uppercase tracking-wider text-[#657894]">
+                {isAdmin ? 'Admin workspace' : 'Faculty workspace'}
+              </p>
             </div>
-            <p className="mt-1.5 text-[13px] font-medium text-[#404040]">Teach. Track. Thrive.</p>
           </div>
 
-          <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-3">
+          <nav className="flex-1 space-y-4 overflow-y-auto p-3">
             <div>
-              <p className="mb-1.5 px-3 text-[13px] font-medium text-[#8a8a8a]">Main Menu</p>
-              <div className="space-y-0.5">{mainMenu.map(renderItem)}</div>
+              <p className="mb-1.5 px-3.5 text-[10px] font-bold uppercase tracking-wider text-[#8494aa]">Main Menu</p>
+              <div className="space-y-1">{mainMenu.map(renderItem)}</div>
             </div>
             <div>
-              <p className="mb-1.5 px-3 text-[13px] font-medium text-[#8a8a8a]">Support</p>
-              <div className="space-y-0.5">{supportMenu.map(renderItem)}</div>
+              <p className="mb-1.5 px-3.5 text-[10px] font-bold uppercase tracking-wider text-[#8494aa]">Support</p>
+              <div className="space-y-1">{supportMenu.map(renderItem)}</div>
             </div>
           </nav>
         </div>
 
         {/* Bottom-Fixed Identity Block (Always visible, outside scroll) */}
-        <div className="p-4 border-t border-[#f0f0ee] bg-white">
+        <div className="p-4 border-t border-[#eaf2fc] bg-white">
           <div className="flex items-center gap-3 mb-3">
             {/* Circular avatar with user's initials */}
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-xs text-white"
+              className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-xs text-white"
               style={{
                 background: `linear-gradient(135deg, ${currentTheme.primaryHex}, ${currentTheme.deepHex})`,
               }}
@@ -140,10 +150,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-[#171717] truncate leading-tight">
+              <p className="text-xs font-bold text-[#10233f] truncate leading-tight">
                 {currentUser.name}
               </p>
-              <p className="text-[11px] font-medium text-[#737373] truncate mt-0.5">
+              <p className="text-[11px] font-medium text-[#657894] truncate mt-0.5">
                 {isAdmin
                   ? 'Admin'
                   : `Faculty — ${(currentUser as any).deptShort || 'Academic'}`}
@@ -154,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Logout button */}
           <button
             onClick={logout}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border border-[#e7e7e4] bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 text-[#737373] text-xs font-semibold transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-[#dce8f7] bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 text-[#657894] text-xs font-semibold transition-all cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign out</span>

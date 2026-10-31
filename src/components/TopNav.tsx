@@ -63,23 +63,23 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
   };
 
   return (
-    <header className="h-[68px] px-4 sm:px-7 bg-white/95 backdrop-blur border-b border-[#e7e7e4] flex items-center justify-between sticky top-0 z-30">
+    <header className="h-14 px-4 sm:px-6 bg-white border-b border-[#dce8f7] flex items-center justify-between sticky top-0 z-30 shadow-xs">
       {/* Left zone: Mobile toggle + Breadcrumb Title */}
       <div className="flex items-center gap-2.5">
         <button
           onClick={onOpenMobileMenu}
-          className="lg:hidden p-1.5 rounded-lg text-[#737373] hover:text-[#171717] hover:bg-[#f4f4f2] transition-colors"
+          className="lg:hidden p-1.5 rounded-lg text-[#657894] hover:text-[#10233f] hover:bg-[#f0f5fc] transition-colors"
           aria-label="Open navigation"
         >
           <Menu className="w-4 h-4" />
         </button>
 
-        <h1 className="max-w-[46vw] truncate text-[17px] font-bold tracking-[-0.01em] text-[#171717] sm:text-xl lg:max-w-none">{title}</h1>
+        <h1 className="max-w-[46vw] truncate text-xs font-bold tracking-tight text-[#10233f] sm:text-[13.5px] lg:max-w-none">{title}</h1>
       </div>
 
       {/* Center zone: quick search */}
       <div className="relative mx-4 hidden max-w-xl flex-1 md:block lg:mx-8">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#737373]" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8494aa]" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -93,12 +93,12 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
             if (e.key === 'Escape') setQuery('');
           }}
           placeholder="Search pages or faculty..."
-          className="w-full rounded-xl bg-[#f0f0ee] py-2.5 pl-11 pr-4 text-sm text-[#171717] placeholder:text-[#8a8a8a] transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#171717]/10"
+          className="w-full rounded-xl border border-[#dce8f7] bg-[#f8fbff] py-1.5 pl-9 pr-4 text-xs text-[#10233f] placeholder:text-[#8494aa] transition focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
         />
         {searchFocused && q && (
-          <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-xl border border-[#e7e7e4] bg-white p-1.5 shadow-[0_18px_45px_rgba(0,0,0,0.12)]">
+          <div className="absolute left-0 right-0 top-10 z-50 overflow-hidden rounded-xl border border-[#dce8f7] bg-white p-1.5 shadow-[0_16px_36px_rgba(31,76,126,0.14)]">
             {searchResults.length === 0 ? (
-              <p className="px-3 py-4 text-center text-xs text-[#737373]">No matches for “{query}”</p>
+              <p className="px-3 py-4 text-center text-xs text-[#657894]">No matches for “{query}”</p>
             ) : (
               searchResults.map((r) => (
                 <button
@@ -108,10 +108,10 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
                     onNavigate?.(r.tab);
                     setQuery('');
                   }}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-[#f4f4f2]"
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs hover:bg-[#f6faff]"
                 >
-                  <span className="font-medium text-[#171717]">{r.label}</span>
-                  <span className="text-[11px] text-[#8a8a8a]">{r.hint}</span>
+                  <span className="font-medium text-[#10233f]">{r.label}</span>
+                  <span className="text-[11px] text-[#8494aa]">{r.hint}</span>
                 </button>
               ))
             )}
@@ -126,30 +126,30 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
             <button
               type="button"
               onClick={() => setShowNotifications((open) => !open)}
-              className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition ${showNotifications ? 'border-[#c9dccf] bg-[#eef6f0] text-[#2f5d50]' : 'border-[#e7e7e4] bg-white text-[#737373] hover:border-[#c9dccf] hover:bg-[#f4f4f2]'}`}
+              className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border shadow-xs transition ${showNotifications ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-[#dce8f7] bg-[#f8fbff] text-[#657894] hover:border-blue-200 hover:text-[#10233f]'}`}
               aria-label={`${pendingLeaves.length} pending leave requests`}
             >
-              <Bell className="h-4 w-4" />
-              {pendingLeaves.length > 0 && <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-[#e5484d] px-1 text-[9px] font-extrabold text-white shadow-sm">{pendingLeaves.length}</span>}
+              <Bell className="h-3.5 w-3.5" />
+              {pendingLeaves.length > 0 && <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[9px] font-extrabold text-white shadow-sm">{pendingLeaves.length}</span>}
             </button>
-            {showNotifications && <div className="absolute right-0 top-12 z-50 w-[min(320px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[#e5e5e2] bg-white shadow-[0_18px_45px_rgba(0,0,0,0.16)]">
-              <div className="flex items-center justify-between border-b border-[#f0f0ee] px-4 py-3"><div><p className="text-xs font-extrabold text-[#171717]">Pending requests</p><p className="mt-0.5 text-[10px] text-[#737373]">Needs an admin decision</p></div><span className="rounded-full bg-[#fff6df] px-2 py-1 text-[10px] font-bold text-[#a66c00]">{pendingLeaves.length} open</span></div>
-              <div className="max-h-72 overflow-y-auto p-2">{pendingLeaves.length === 0 ? <div className="px-3 py-8 text-center text-xs text-[#737373]">You&apos;re all caught up.</div> : pendingLeaves.slice(0, 4).map((request) => <div key={request.id} className="rounded-xl px-3 py-3 transition hover:bg-[#f7f7f5]"><div className="flex items-start gap-2"><span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#f59e0b]" /><div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold text-[#171717]">{request.facultyName}</p><p className="mt-0.5 truncate text-[10px] text-[#737373]">{request.department} · {request.daysCount} days</p><p className="mt-1 line-clamp-2 text-[10px] leading-4 text-[#737373]">{request.reason}</p><div className="mt-2 flex items-center gap-1.5"><button onClick={() => updateLeaveRequestStatus(request.id, 'Approved')} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white"><CheckCircle2 className="h-3 w-3" /> Approve</button><button onClick={() => updateLeaveRequestStatus(request.id, 'Rejected')} className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-[10px] font-bold text-red-600"><XCircle className="h-3 w-3" /> Reject</button></div></div></div></div>)}</div>
-              <button onClick={() => { setShowNotifications(false); onOpenLeaveRequests?.(); }} className="flex w-full items-center justify-center gap-1 border-t border-[#f0f0ee] bg-[#f7f7f5] px-4 py-3 text-[11px] font-bold text-[#2f5d50] hover:bg-[#eef6f0]">Open leave management <span>→</span></button>
+            {showNotifications && <div className="absolute right-0 top-10 z-50 w-[min(320px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[#dce8f7] bg-white shadow-[0_16px_36px_rgba(31,76,126,0.14)]">
+              <div className="flex items-center justify-between border-b border-[#eaf2fc] px-4 py-3"><div><p className="text-[13px] font-bold text-[#10233f]">Pending requests</p><p className="mt-0.5 text-[10px] text-[#657894]">Needs an admin decision</p></div><span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">{pendingLeaves.length} open</span></div>
+              <div className="max-h-72 overflow-y-auto p-2">{pendingLeaves.length === 0 ? <div className="px-3 py-8 text-center text-xs text-[#657894]">You&apos;re all caught up.</div> : pendingLeaves.slice(0, 4).map((request) => <div key={request.id} className="rounded-xl px-3 py-3 transition hover:bg-[#f0f6ff]"><div className="flex items-start gap-2"><span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#f59e0b]" /><div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold text-[#10233f]">{request.facultyName}</p><p className="mt-0.5 truncate text-[10px] text-[#657894]">{request.department} · {request.daysCount} days</p><p className="mt-1 line-clamp-2 text-[10px] leading-4 text-[#657894]">{request.reason}</p><div className="mt-2 flex items-center gap-1.5"><button onClick={() => updateLeaveRequestStatus(request.id, 'Approved')} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white"><CheckCircle2 className="h-3 w-3" /> Approve</button><button onClick={() => updateLeaveRequestStatus(request.id, 'Rejected')} className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-[10px] font-bold text-red-600"><XCircle className="h-3 w-3" /> Reject</button></div></div></div></div>)}</div>
+              <button onClick={() => { setShowNotifications(false); onOpenLeaveRequests?.(); }} className="flex w-full items-center justify-center gap-1 border-t border-[#eaf2fc] bg-[#f8fbff] px-4 py-2.5 text-[11px] font-bold text-blue-600 hover:bg-blue-50 hover:text-blue-800">Open leave management <span>→</span></button>
             </div>}
           </div>
         )}
         {/* Live Academic Clock Badge */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e7e7e4] bg-[#f7f7f5] text-[11px] font-semibold text-[#404040] select-none">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#dce8f7] bg-[#f8fbff] text-[11px] font-semibold text-[#10233f] shadow-xs select-none">
           <Clock
             className="w-3 h-3 shrink-0"
             style={{ color: currentTheme.primaryHex }}
           />
-          <span className="font-semibold text-[#171717]">
+          <span className="font-semibold text-[#10233f]">
             {clock.dayName}
           </span>
-          <span className="text-[#d4d4d4] font-light">·</span>
-          <span className="font-mono tabular-nums font-bold text-[#171717]">
+          <span className="text-[#cbd5e1] font-light">·</span>
+          <span className="font-mono tabular-nums font-bold text-[#10233f]">
             {formatTimeDisplay(clock.timeStr)}
           </span>
           <span
@@ -169,7 +169,7 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
         >
           <div className="flex cursor-pointer items-center gap-2.5">
             <div
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-xs font-bold text-white shadow-xs"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white shadow-xs transition-transform hover:scale-105"
               style={{
                 background: `linear-gradient(135deg, ${currentTheme.primaryHex}, ${currentTheme.deepHex})`,
               }}
@@ -177,15 +177,15 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
               {currentUser.avatarInitials}
             </div>
             <div className="hidden leading-tight xl:block">
-              <p className="text-sm font-semibold text-[#171717]">{currentUser.name.split(' ').slice(0, 2).join(' ')}</p>
-              <p className="text-[12px] text-[#737373]">{isAdmin ? 'Admin' : (currentUser as any).deptShort + ' Faculty'}</p>
+              <p className="text-xs font-bold text-[#10233f]">{currentUser.name.split(' ').slice(0, 2).join(' ')}</p>
+              <p className="text-[11px] font-medium text-[#657894]">{isAdmin ? 'Admin' : (currentUser as any).deptShort + ' Faculty'}</p>
             </div>
-            <ChevronDown className="hidden h-4 w-4 text-[#404040] xl:block" />
+            <ChevronDown className="hidden h-3.5 w-3.5 text-[#657894] xl:block" />
           </div>
 
           {/* Popover / Tooltip */}
           {showProfilePopover && (
-            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-[#e7e7e4] shadow-xl p-3 z-50 pointer-events-none transition-all duration-150">
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-[#dce8f7] shadow-xl p-3 z-50 pointer-events-none transition-all duration-150">
               <div className="flex items-center gap-2.5 mb-2">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0"
@@ -196,20 +196,20 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
                   {currentUser.avatarInitials}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-[#171717] truncate">
+                  <p className="text-xs font-bold text-[#10233f] truncate">
                     {currentUser.name}
                   </p>
-                  <p className="text-[11px] font-medium text-[#737373] truncate">
+                  <p className="text-[11px] font-medium text-[#657894] truncate">
                     {currentUser.email}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[#efefed] text-[11px] text-[#737373] flex items-center justify-between">
-                <span className="font-semibold text-[#171717]">
+              <div className="pt-2 border-t border-[#eaf2fc] text-[11px] text-[#657894] flex items-center justify-between">
+                <span className="font-semibold text-[#10233f]">
                   {currentUser.position}
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#eef6f0] text-green-700">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#eff6ff] text-blue-700">
                   {isAdmin ? 'Admin' : (currentUser as any).deptShort}
                 </span>
               </div>

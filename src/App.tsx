@@ -95,7 +95,7 @@ const MainAppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f4f2] text-[#171717] flex flex-col selection:bg-green-100 selection:text-green-900">
+    <div className="min-h-screen bg-[#eef5ff] text-[#10233f] flex flex-col selection:bg-blue-100 selection:text-blue-900">
       {/* Persistent role-based navigation */}
       <Sidebar
         currentTab={isAdmin ? adminTab : facultyTab}
@@ -133,7 +133,7 @@ const MainAppContent: React.FC = () => {
         />
 
         {/* Main workspace body */}
-        <main className="p-4 sm:p-5 lg:p-7 max-w-[1440px] w-full mx-auto flex-1">
+        <main className="p-3 sm:p-4 lg:p-5 max-w-6xl w-full mx-auto flex-1">
           {isAdmin ? (
             /* Admin Workspace Views */
             <>

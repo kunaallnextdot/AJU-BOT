@@ -9,9 +9,9 @@ interface RecentActivityProps {
 }
 
 const statusStyle: Record<string, string> = {
-  Pending: 'bg-[#fff6df] text-[#a66c00]',
-  Approved: 'bg-[#e7f6ec] text-[#17803f]',
-  Rejected: 'bg-[#fdecec] text-[#c2312f]',
+  Pending: 'border-amber-200 bg-amber-50 text-amber-700',
+  Approved: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  Rejected: 'border-red-200 bg-red-50 text-red-700',
 };
 
 export const RecentActivity: React.FC<RecentActivityProps> = ({ onOpenLeave, onOpenFaculty }) => {
@@ -48,54 +48,57 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({ onOpenLeave, onO
   };
 
   return (
-    <section className="overflow-hidden rounded-xl border border-[#e7e7e4] bg-white">
-      <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:p-4">
-        <h3 className="shrink-0 text-[17px] font-bold text-[#171717]">Recent Activity</h3>
+    <section className="overflow-hidden rounded-2xl border border-[#dce8f7] bg-white shadow-[0_10px_30px_rgba(31,76,126,0.06)]">
+      <div className="flex flex-col gap-3 border-b border-[#eaf2fc] p-4 sm:flex-row sm:items-center">
+        <div className="shrink-0">
+          <h3 className="text-[13px] font-bold text-[#10233f]">Recent Activity</h3>
+          <p className="mt-0.5 text-[11px] text-[#657894]">Latest leave and substitution requests</p>
+        </div>
         <label className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#737373]" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8494aa]" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search..."
-            className="w-full rounded-lg bg-[#f0f0ee] py-2.5 pl-10 pr-3 text-sm text-[#171717] placeholder:text-[#8a8a8a] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#171717]/10"
+            className="w-full rounded-xl border border-[#dce8f7] bg-[#f8fbff] py-2 pl-9 pr-3 text-xs text-[#10233f] placeholder:text-[#8494aa] focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
           />
         </label>
         <button
           onClick={exportCsv}
           disabled={rows.length === 0}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[#e2e2df] bg-white px-4 py-2.5 text-sm font-semibold text-[#171717] transition hover:bg-[#f7f7f5] disabled:opacity-50"
+          className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[#dce8f7] bg-white px-3.5 py-2 text-xs font-bold text-[#10233f] shadow-xs transition hover:border-blue-200 hover:bg-blue-50 disabled:opacity-50"
         >
-          <Upload className="h-4 w-4" /> Export
+          <Upload className="h-3.5 w-3.5" /> Export
         </button>
       </div>
 
       <div className="max-h-[300px] overflow-auto">
-        <table className="w-full min-w-[640px] text-left">
+        <table className="data-table w-full min-w-[640px] border-collapse text-left">
           <thead className="sticky top-0 bg-white">
-            <tr className="border-b border-[#e7e7e4] text-[14px] text-[#171717]">
-              <th className="w-20 px-4 py-2.5 font-semibold">Sl. No</th>
-              <th className="px-4 py-2.5 font-semibold">Activity</th>
-              <th className="px-4 py-2.5 font-semibold">Status</th>
-              <th className="px-4 py-2.5 text-right font-semibold">Action</th>
+            <tr className="border-b border-[#eaf2fc]">
+              <th className="w-20 px-4 py-2.5">Sl. No</th>
+              <th className="px-4 py-2.5">Activity</th>
+              <th className="px-4 py-2.5">Status</th>
+              <th className="px-4 py-2.5 text-right">Action</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-sm text-[#737373]">
+                <td colSpan={4} className="px-4 py-6 text-center text-[11px] text-[#657894]">
                   No activity matches “{query}”.
                 </td>
               </tr>
             ) : (
               rows.map((r, i) => (
-                <tr key={r.id} className="border-b border-[#f0f0ee] text-[14px] last:border-0 hover:bg-[#fafaf9]">
-                  <td className="px-4 py-3 tabular-nums text-[#404040]">{i + 1}</td>
+                <tr key={r.id} className="border-b border-[#f0f6ff] last:border-0 hover:bg-[#f9fcff]">
+                  <td className="px-4 py-3 font-mono tabular-nums text-[#657894]">{i + 1}</td>
                   <td className="px-4 py-3">
-                    <p className="text-[#171717]">{r.activity}</p>
-                    <p className="mt-0.5 text-[12px] text-[#737373]">{r.department} · {r.detail}</p>
+                    <p className="font-semibold text-[#10233f]">{r.activity}</p>
+                    <p className="mt-0.5 text-[11px] text-[#657894]">{r.department} · {r.detail}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-md px-2 py-1 text-[11px] font-semibold ${statusStyle[r.status]}`}>{r.status}</span>
+                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusStyle[r.status]}`}>{r.status}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">

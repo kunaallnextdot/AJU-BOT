@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { supabase, FacultyRow, LeaveRow, facultyToRow, rowToFaculty, leaveToRow, rowToLeave } from '../lib/supabase';
 import {
   CurrentUser,
   FacultyMember,
@@ -66,6 +67,9 @@ interface AppContextType {
   submitLeaveRequest: (
     req: Omit<LeaveRequest, 'id' | 'createdAt' | 'status'>
   ) => void;
+  addFaculty: (
+    faculty: Omit<FacultyMember, 'id' | 'role' | 'avatarInitials' | 'timetable' | 'subjects'>
+  ) => FacultyMember;
   updateLeaveRequestStatus: (
     requestId: string,
     status: 'Approved' | 'Rejected'
@@ -156,6 +160,78 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     root.style.setProperty('--accent-glow', currentTheme.glowHex);
 
   }, [currentTheme]);
+
+  // ---------- Supabase sync ----------
+  // On mount, replace the local copy with the database rows. After that, every
+  // faculty or leave row whose content changed is upserted back. `synced` holds
+  // the last saved JSON per row id, so unchanged rows are never re-sent.
+  const [remoteReady, setRemoteReady] = useState(false);
+  const synced = useRef<{ faculty: Map<string, string>; leave: Map<string, string> } | null>(null);
+
+  useEffect(() => {
+    const db = supabase;
+    if (!db) return;
+    let cancelled = false;
+    (async () => {
+      const [f, l] = await Promise.all([
+        db.from('faculty').select('*').order('employee_code', { nullsFirst: false }).order('created_at'),
+        db.from('leave_requests').select('*').order('created_at', { ascending: false }),
+      ]);
+      if (cancelled) return;
+      if (f.error || l.error) {
+        console.error('Supabase load failed, using local data:', (f.error ?? l.error)?.message);
+        return;
+      }
+      if (f.data.length === 0) {
+        console.warn('Supabase faculty table is empty, using local data. Run `npm run db:seed`.');
+        return;
+      }
+      const faculty = (f.data as FacultyRow[]).map(rowToFaculty);
+      const leave = (l.data as LeaveRow[]).map(rowToLeave);
+      synced.current = {
+        faculty: new Map(faculty.map((x) => [x.id, JSON.stringify(x)])),
+        leave: new Map(leave.map((x) => [x.id, JSON.stringify(x)])),
+      };
+      setFacultyList(faculty);
+      setLeaveRequests(leave);
+      setRemoteReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!remoteReady || !supabase || !synced.current) return;
+    const saved = synced.current.faculty;
+    const changed = facultyList.filter((x) => saved.get(x.id) !== JSON.stringify(x));
+    if (changed.length === 0) return;
+    changed.forEach((x) => saved.set(x.id, JSON.stringify(x)));
+    supabase
+      .from('faculty')
+      .upsert(changed.map(facultyToRow))
+      .then(({ error }) => {
+        if (!error) return;
+        console.error('Supabase faculty save failed:', error.message);
+        changed.forEach((x) => saved.delete(x.id)); // retry on the next change
+      });
+  }, [facultyList, remoteReady]);
+
+  useEffect(() => {
+    if (!remoteReady || !supabase || !synced.current) return;
+    const saved = synced.current.leave;
+    const changed = leaveRequests.filter((x) => saved.get(x.id) !== JSON.stringify(x));
+    if (changed.length === 0) return;
+    changed.forEach((x) => saved.set(x.id, JSON.stringify(x)));
+    supabase
+      .from('leave_requests')
+      .upsert(changed.map(leaveToRow))
+      .then(({ error }) => {
+        if (!error) return;
+        console.error('Supabase leave save failed:', error.message);
+        changed.forEach((x) => saved.delete(x.id));
+      });
+  }, [leaveRequests, remoteReady]);
 
   // Save faculty list and keep currentUser updated if faculty
   useEffect(() => {
@@ -402,6 +478,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLeaveRequests((prev) => [newRequest, ...prev]);
   };
 
+  // Register a newly joined faculty member (no timetable or subjects yet)
+  const addFaculty = (
+    data: Omit<FacultyMember, 'id' | 'role' | 'avatarInitials' | 'timetable' | 'subjects'>
+  ) => {
+    const initials = data.name
+      .trim()
+      .split(/\s+/)
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+    const faculty: FacultyMember = {
+      ...data,
+      id: `fac-${Date.now()}`,
+      role: 'faculty',
+      avatarInitials: initials,
+      timetable: [],
+      subjects: [],
+    };
+    setFacultyList((prev) => [...prev, faculty]);
+    return faculty;
+  };
+
   // Approve / Reject leave
   const updateLeaveRequestStatus = (
     requestId: string,
@@ -448,6 +547,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleModuleCompletion,
         addSubjectModule,
         submitLeaveRequest,
+        addFaculty,
         updateLeaveRequestStatus,
         logout,
         loginUser,

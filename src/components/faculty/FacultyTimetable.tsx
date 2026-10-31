@@ -56,14 +56,14 @@ export const FacultyTimetable: React.FC<FacultyTimetableProps> = ({ faculty }) =
   return (
     <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
       {/* Top Header Card */}
-      <div className="bg-white rounded-2xl border border-[#e7e7e4] p-3.5 sm:p-4 shadow-[0_6px_20px_rgba(0,0,0,0.05)] flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl border border-[#dce8f7] p-3.5 sm:p-4 shadow-[0_6px_20px_rgba(31,76,126,0.05)] flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xs sm:text-sm font-bold text-[#171717] flex items-center gap-2">
-            <Clock className="w-4 h-4 text-green-600" />
+          <h2 className="text-xs sm:text-sm font-bold text-[#10233f] flex items-center gap-2">
+            <Clock className="w-4 h-4 text-blue-600" />
             <span>Master Instructional Teaching Timetable</span>
           </h2>
-          <p className="text-[11px] text-[#737373] mt-0.5">
-            Weekly timetable and peer substitution commitments for <strong className="text-[#171717]">{faculty.name}</strong> ({faculty.department})
+          <p className="text-[11px] text-[#657894] mt-0.5">
+            Weekly timetable and peer substitution commitments for <strong className="text-[#10233f]">{faculty.name}</strong> ({faculty.department})
           </p>
         </div>
 
@@ -74,8 +74,8 @@ export const FacultyTimetable: React.FC<FacultyTimetableProps> = ({ faculty }) =
               <span>{substituteSlots.length} Substitute Period{substituteSlots.length > 1 ? 's' : ''} Assigned</span>
             </span>
           )}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#f4f4f2] border border-[#e7e7e4] text-[11px] font-semibold text-[#171717]">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#eef5ff] border border-[#dce8f7] text-[11px] font-semibold text-[#10233f]">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
             <span>Today: <strong>{clock.dayName}</strong></span>
           </div>
         </div>
@@ -94,11 +94,11 @@ export const FacultyTimetable: React.FC<FacultyTimetableProps> = ({ faculty }) =
       )}
 
       {/* Timetable Weekly Grid */}
-      <div className="bg-white rounded-2xl border border-[#e7e7e4] p-3.5 sm:p-5 shadow-[0_8px_24px_rgba(0,0,0,0.06)] overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-[#dce8f7] p-3.5 sm:p-5 shadow-[0_8px_24px_rgba(31,76,126,0.06)] overflow-x-auto">
         <table className="w-full min-w-[760px] border-collapse text-left">
           <thead>
             <tr>
-              <th className="p-2.5 w-28 bg-[#fafaf9] text-[10px] font-bold uppercase tracking-wider text-[#737373] border-b border-r border-[#e7e7e4] rounded-tl-xl">
+              <th className="p-2.5 w-28 bg-[#f8fbff] text-[10px] font-bold uppercase tracking-wider text-[#657894] border-b border-r border-[#dce8f7] rounded-tl-xl">
                 Period / Time
               </th>
               {days.map((day, idx) => {
@@ -107,10 +107,10 @@ export const FacultyTimetable: React.FC<FacultyTimetableProps> = ({ faculty }) =
                 return (
                   <th
                     key={day}
-                    className={`p-2.5 text-center text-[11px] font-bold border-b border-r last:border-r-0 border-[#e7e7e4] transition-colors ${
+                    className={`p-2.5 text-center text-[11px] font-bold border-b border-r last:border-r-0 border-[#dce8f7] transition-colors ${
                       isCurrentDay
-                        ? 'bg-green-50/70 text-green-900 border-b-2'
-                        : 'bg-[#fafaf9] text-[#171717]'
+                        ? 'bg-blue-50/70 text-blue-900 border-b-2'
+                        : 'bg-[#f8fbff] text-[#10233f]'
                     } ${idx === days.length - 1 ? 'rounded-tr-xl' : ''}`}
                     style={{
                       borderBottomColor: isCurrentDay ? currentTheme.primaryHex : undefined,
@@ -119,7 +119,7 @@ export const FacultyTimetable: React.FC<FacultyTimetableProps> = ({ faculty }) =
                     <div className="flex items-center justify-center gap-1.5">
                       <span>{day}</span>
                       {isCurrentDay && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
                       )}
                     </div>
                   </th>
@@ -132,14 +132,14 @@ export const FacultyTimetable: React.FC<FacultyTimetableProps> = ({ faculty }) =
               return (
                 <tr
                   key={slot.periodNumber}
-                  className="hover:bg-[#fafaf9] transition-colors border-b border-[#efefed] last:border-b-0"
+                  className="hover:bg-[#f8fbff] transition-colors border-b border-[#eaf2fc] last:border-b-0"
                 >
                   {/* Period Time Column */}
-                  <td className="p-2.5 bg-[#fafaf9] border-r border-[#e7e7e4] align-top">
-                    <div className="text-[11px] font-bold text-[#171717]">
+                  <td className="p-2.5 bg-[#f8fbff] border-r border-[#dce8f7] align-top">
+                    <div className="text-[11px] font-bold text-[#10233f]">
                       {slot.label}
                     </div>
-                    <div className="text-[10px] font-mono text-[#737373] mt-0.5">
+                    <div className="text-[10px] font-mono text-[#657894] mt-0.5">
                       {slot.startTime}–{slot.endTime}
                     </div>
                   </td>
@@ -174,11 +174,11 @@ export const FacultyTimetable: React.FC<FacultyTimetableProps> = ({ faculty }) =
                     return (
                       <td
                         key={day}
-                        className={`p-2 border-r last:border-r-0 border-[#efefed] align-top transition-all ${
+                        className={`p-2 border-r last:border-r-0 border-[#eaf2fc] align-top transition-all ${
                           isNow
-                            ? 'bg-green-50/90 ring-1 ring-inset ring-green-500 shadow-xs'
+                            ? 'bg-blue-50/90 ring-1 ring-inset ring-blue-500 shadow-xs'
                             : isCurrentDay
-                            ? 'bg-[#fafaf9]'
+                            ? 'bg-[#f8fbff]'
                             : ''
                         }`}
                       >
@@ -198,7 +198,7 @@ export const FacultyTimetable: React.FC<FacultyTimetableProps> = ({ faculty }) =
                                   {subItem.sub.date}
                                 </span>
                               </div>
-                              <p className="font-extrabold text-[11px] text-[#171717] leading-snug">
+                              <p className="font-extrabold text-[11px] text-[#10233f] leading-snug">
                                 {subItem.sub.subject}
                               </p>
                               <div className="text-[10px] font-bold text-amber-800 mt-1 flex items-center gap-1">
@@ -220,28 +220,28 @@ export const FacultyTimetable: React.FC<FacultyTimetableProps> = ({ faculty }) =
                           <div
                             className={`p-2 rounded-xl border flex flex-col justify-between h-full min-h-[76px] transition-all card-lift ${
                               isNow
-                                ? 'bg-white border-green-400 shadow-xs'
-                                : 'bg-white border-[#e7e7e4] hover:border-green-300'
+                                ? 'bg-white border-blue-400 shadow-xs'
+                                : 'bg-white border-[#dce8f7] hover:border-blue-300'
                             }`}
                           >
                             <div>
                               <div className="flex items-center justify-between gap-1 mb-1">
-                                <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-[#eef6f0] text-green-700">
+                                <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-[#eff6ff] text-blue-700">
                                   {classCell.subjectCode}
                                 </span>
                                 {isNow && (
-                                  <span className="text-[8px] font-extrabold uppercase px-1 py-0.2 rounded bg-green-600 text-white animate-pulse">
+                                  <span className="text-[8px] font-extrabold uppercase px-1 py-0.2 rounded bg-blue-600 text-white animate-pulse">
                                     NOW
                                   </span>
                                 )}
                               </div>
-                              <p className="font-extrabold text-[11px] text-[#171717] leading-tight line-clamp-2">
+                              <p className="font-extrabold text-[11px] text-[#10233f] leading-tight line-clamp-2">
                                 {classCell.subject}
                               </p>
                             </div>
 
-                            <div className="mt-1.5 pt-1 border-t border-[#f4f4f2] flex items-center justify-between text-[10px] text-[#737373]">
-                              <span className="font-semibold text-[#171717]">
+                            <div className="mt-1.5 pt-1 border-t border-[#eef5ff] flex items-center justify-between text-[10px] text-[#657894]">
+                              <span className="font-semibold text-[#10233f]">
                                 Sem {classCell.semester} · {classCell.section}
                               </span>
                               <span className="flex items-center gap-0.5 text-[9px]">
@@ -251,7 +251,7 @@ export const FacultyTimetable: React.FC<FacultyTimetableProps> = ({ faculty }) =
                             </div>
                           </div>
                         ) : (
-                          <div className="min-h-[76px] flex items-center justify-center text-[10px] text-[#d4d4d4] font-medium italic">
+                          <div className="min-h-[76px] flex items-center justify-center text-[10px] text-[#cbd5e1] font-medium italic">
                             —
                           </div>
                         )}

@@ -93,18 +93,18 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
   return (
     <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
       {/* Top Greeting */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 border-b border-[#e7e7e4]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 border-b border-[#dce8f7]">
         <div>
-          <h2 className="text-base sm:text-lg font-extrabold text-[#171717] tracking-tight">
+          <h2 className="text-base sm:text-lg font-extrabold text-[#10233f] tracking-tight">
             {getGreeting()}, {faculty.name.replace(/^(Dr|Prof)\.\s*/, '').split(' ')[0]}
           </h2>
-          <p className="text-[11px] font-medium text-[#737373] mt-0.5">
-            Your schedule for <strong className="text-[#171717]">{clock.dayName}</strong> ({clock.dateStr})
+          <p className="text-[11px] font-medium text-[#657894] mt-0.5">
+            Your schedule for <strong className="text-[#10233f]">{clock.dayName}</strong> ({clock.dateStr})
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#e7e7e4] text-[11px] font-semibold text-[#171717] shadow-xs">
-          <Clock className="w-3 h-3 text-green-600" />
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#dce8f7] text-[11px] font-semibold text-[#10233f] shadow-xs">
+          <Clock className="w-3 h-3 text-blue-600" />
           <span className="font-mono tabular-nums">{clock.timeStr}</span>
         </div>
       </div>
@@ -162,12 +162,12 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
 
               {inProgressClass ? (
                 <div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white text-green-900 text-[11px] font-bold mb-2 shadow-xs animate-pulse">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white text-blue-900 text-[11px] font-bold mb-2 shadow-xs animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
                     <span>In Progress Now ({inProgressClass.startTime} – {inProgressClass.endTime})</span>
                   </div>
                   <h3 className="text-xl font-bold">{inProgressClass.subject}</h3>
-                  <div className="flex items-center gap-3 mt-1.5 text-[11px] font-medium text-green-100 flex-wrap">
+                  <div className="flex items-center gap-3 mt-1.5 text-[11px] font-medium text-blue-100 flex-wrap">
                     <span>Sem {inProgressClass.semester} · {inProgressClass.section}</span>
                     <span>·</span>
                     <span className="flex items-center gap-1">
@@ -185,14 +185,14 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
                     <span>Next: {upcomingClasses[0].startTime} ({upcomingClasses[0].subject})</span>
                   </div>
                   <h3 className="text-lg font-bold">You are currently between instructional periods.</h3>
-                  <p className="text-[11px] text-green-100/90 mt-0.5">
+                  <p className="text-[11px] text-blue-100/90 mt-0.5">
                     Your next session begins at <span className="font-mono font-bold">{upcomingClasses[0].startTime}</span> in {upcomingClasses[0].room}.
                   </p>
                 </div>
               ) : (
                 <div>
                   <h3 className="text-lg font-bold">All teaching periods completed for today!</h3>
-                  <p className="text-[11px] text-green-100/90 mt-0.5">
+                  <p className="text-[11px] text-blue-100/90 mt-0.5">
                     No further classes remaining for {clock.dayName}. You can audit and update your syllabus modules.
                   </p>
                 </div>
@@ -201,15 +201,15 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
           </div>
 
           {/* Live List of Today's Classes */}
-          <div className="bg-white rounded-2xl border border-[#e7e7e4] p-4.5 sm:p-5 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
-            <div className="flex items-center justify-between mb-3.5 pb-2.5 border-b border-[#efefed]">
-              <h3 className="text-[13px] font-bold text-[#171717] flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-green-600" />
+          <div className="bg-white rounded-2xl border border-[#dce8f7] p-4.5 sm:p-5 shadow-[0_10px_30px_rgba(31,76,126,0.06)]">
+            <div className="flex items-center justify-between mb-3.5 pb-2.5 border-b border-[#eaf2fc]">
+              <h3 className="text-[13px] font-bold text-[#10233f] flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-blue-600" />
                 <span>Your Classes Today</span>
               </h3>
               <button
                 onClick={() => onNavigateTab('timetable')}
-                className="text-[11px] font-bold text-green-600 hover:text-green-800 flex items-center gap-1 cursor-pointer"
+                className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
               >
                 <span>Full Timetable</span>
                 <ArrowRight className="w-3 h-3" />
@@ -217,7 +217,7 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
             </div>
 
             {todayClasses.length === 0 ? (
-              <div className="text-center py-10 text-xs text-[#737373]">
+              <div className="text-center py-10 text-xs text-[#657894]">
                 No lectures or lab sessions scheduled for {clock.dayName}.
               </div>
             ) : (
@@ -230,10 +230,10 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
                       key={idx}
                       className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                         status === 'In Progress'
-                          ? 'border-2 border-green-400 bg-green-50/50 shadow-xs'
+                          ? 'border-2 border-blue-400 bg-blue-50/50 shadow-xs'
                           : status === 'Done'
-                          ? 'border-[#ececea] bg-[#fafaf9] opacity-80'
-                          : 'border-[#e7e7e4] bg-white'
+                          ? 'border-[#e2ecf9] bg-[#f8fbff] opacity-80'
+                          : 'border-[#dce8f7] bg-white'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -243,11 +243,11 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
                             backgroundColor:
                               status === 'In Progress'
                                 ? currentTheme.lightHex
-                                : '#f4f4f2',
+                                : '#eef5ff',
                             color:
                               status === 'In Progress'
                                 ? currentTheme.deepHex
-                                : '#737373',
+                                : '#657894',
                           }}
                         >
                           P{cls.periodNumber}
@@ -255,15 +255,15 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
 
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-[#171717] text-sm">
+                            <h4 className="font-bold text-[#10233f] text-sm">
                               {cls.subject}
                             </h4>
-                            <span className="text-[11px] font-mono text-[#737373]">
+                            <span className="text-[11px] font-mono text-[#657894]">
                               {cls.subjectCode}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-[#737373] mt-1 flex-wrap">
-                            <span className="font-semibold text-[#171717]">
+                          <div className="flex items-center gap-3 text-xs text-[#657894] mt-1 flex-wrap">
+                            <span className="font-semibold text-[#10233f]">
                               Sem {cls.semester} · {cls.section}
                             </span>
                             <span>·</span>
@@ -272,7 +272,7 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
                               {cls.room}
                             </span>
                             <span>·</span>
-                            <span className="font-mono text-[#171717] font-semibold">
+                            <span className="font-mono text-[#10233f] font-semibold">
                               {cls.startTime} – {cls.endTime}
                             </span>
                           </div>
@@ -282,8 +282,8 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
                       {/* Status Chip */}
                       <div className="self-end sm:self-center shrink-0">
                         {status === 'In Progress' && (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
-                            <PlayCircle className="w-3.5 h-3.5 text-green-600 animate-spin" />
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                            <PlayCircle className="w-3.5 h-3.5 text-blue-600 animate-spin" />
                             <span>In Progress</span>
                           </span>
                         )}
@@ -317,7 +317,7 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
 
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-bold text-[#171717] text-xs sm:text-sm">
+                          <h4 className="font-bold text-[#10233f] text-xs sm:text-sm">
                             {subItem.sub.subject}
                           </h4>
                           <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-white shadow-2xs">
@@ -327,7 +327,7 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
                         <div className="text-[11px] font-bold text-amber-800 mt-0.5">
                           Covering for {subItem.requestingFacultyName} (Sem {subItem.sub.semester} · {subItem.sub.section})
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-[#737373] mt-0.5">
+                        <div className="flex items-center gap-2 text-[10px] text-[#657894] mt-0.5">
                           <Clock className="w-3 h-3 text-amber-600" />
                           <span>{subItem.sub.startTime}–{subItem.sub.endTime}</span>
                         </div>
@@ -349,16 +349,16 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
 
         {/* Side Card: Today's Timeline (Chronological List of Periods) */}
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-[#e7e7e4] p-5 sm:p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
-            <h3 className="text-sm font-bold text-[#171717] mb-1 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-green-600" />
+          <div className="bg-white rounded-2xl border border-[#dce8f7] p-5 sm:p-6 shadow-[0_10px_30px_rgba(31,76,126,0.06)]">
+            <h3 className="text-sm font-bold text-[#10233f] mb-1 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-blue-600" />
               <span>Today&apos;s Chronological Timeline</span>
             </h3>
-            <p className="text-xs text-[#737373] mb-4">
+            <p className="text-xs text-[#657894] mb-4">
               Sequence of academic blocks for {clock.dayName}
             </p>
 
-            <div className="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#e7e7e4]">
+            <div className="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#dce8f7]">
               {todayClasses.map((cls, idx) => {
                 const status = getPeriodStatus(cls);
                 const isCurrent = status === 'In Progress';
@@ -370,7 +370,7 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
                     <div
                       className={`absolute -left-6 top-1 w-3 h-3 rounded-full border-2 border-white shadow-xs transition-transform ${
                         isCurrent
-                          ? 'bg-green-600 scale-125 ring-2 ring-green-300'
+                          ? 'bg-blue-600 scale-125 ring-2 ring-blue-300'
                           : isDone
                           ? 'bg-emerald-500'
                           : 'bg-slate-300'
@@ -379,17 +379,17 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
 
                     <div>
                       <div className="flex items-center justify-between text-xs mb-0.5">
-                        <span className="font-mono font-bold text-[#171717]">
+                        <span className="font-mono font-bold text-[#10233f]">
                           {cls.startTime} – {cls.endTime}
                         </span>
-                        <span className="text-[10px] font-bold text-[#737373]">
+                        <span className="text-[10px] font-bold text-[#657894]">
                           Period {cls.periodNumber}
                         </span>
                       </div>
-                      <p className="font-bold text-xs text-[#171717] leading-snug">
+                      <p className="font-bold text-xs text-[#10233f] leading-snug">
                         {cls.subject}
                       </p>
-                      <p className="text-[11px] text-[#737373] mt-0.5">
+                      <p className="text-[11px] text-[#657894] mt-0.5">
                         {cls.section} · {cls.room}
                       </p>
                     </div>
@@ -398,7 +398,7 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
               })}
 
               {todayClasses.length === 0 && (
-                <p className="text-xs text-[#737373]">No chronological blocks.</p>
+                <p className="text-xs text-[#657894]">No chronological blocks.</p>
               )}
             </div>
           </div>
@@ -406,17 +406,17 @@ export const FacultyMyDay: React.FC<FacultyMyDayProps> = ({ faculty, onNavigateT
           {/* Quick Syllabus Status preview link */}
           <div
             onClick={() => onNavigateTab('dashboard')}
-            className="p-5 rounded-2xl border border-[#e7e7e4] bg-white card-lift cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.06)] flex items-center justify-between"
+            className="p-5 rounded-2xl border border-[#dce8f7] bg-white card-lift cursor-pointer shadow-[0_8px_24px_rgba(31,76,126,0.06)] flex items-center justify-between"
           >
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#737373] block">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#657894] block">
                 Course Progress
               </span>
-              <span className="font-bold text-xs text-[#171717]">
+              <span className="font-bold text-xs text-[#10233f]">
                 Manage Module Checklists
               </span>
             </div>
-            <ArrowRight className="w-4 h-4 text-green-600" />
+            <ArrowRight className="w-4 h-4 text-blue-600" />
           </div>
         </div>
       </div>

@@ -18,7 +18,7 @@ interface AdminDashboardProps {
 }
 
 const statusTone = {
-  teaching: { label: 'In class', dot: 'bg-[#171717]', text: 'text-[#1f9d55]', bg: 'bg-[#eef6f0]' },
+  teaching: { label: 'In class', dot: 'bg-blue-600', text: 'text-blue-700', bg: 'bg-blue-50' },
   free: { label: 'Free now', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' },
   leave: { label: 'On leave', dot: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50' },
 };
@@ -67,14 +67,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab, o
   const approvalRate = decidedLeaves ? (approvedLeaves / decidedLeaves) * 100 : 0;
 
   return (
-    <div className="space-y-5 pb-8 animate-in fade-in duration-300">
-      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+    <div className="space-y-4 pb-8 animate-in fade-in duration-200 sm:space-y-5">
+      <div className="flex flex-col justify-between gap-1.5 border-b border-[#e2ecf9] pb-2 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-2xl font-bold tracking-[-0.02em] text-[#171717]">{greeting}, Admin</h2>
-          <p className="mt-1 text-sm text-[#737373]">Here&apos;s what&apos;s happening across faculty and schedules at Arka Jain University today.</p>
+          <h2 className="text-base font-extrabold tracking-tight text-[#10233f] sm:text-lg">{greeting}, {currentUser?.name.split(' ')[0] || 'Admin'}</h2>
+          <p className="mt-0.5 text-[11px] font-medium text-[#657894]">
+            Operations overview for <span className="font-semibold text-[#10233f]">{clock.dayName}</span>, Academic Session 2026–2027.
+          </p>
         </div>
-        <span className="inline-flex items-center gap-2 self-start rounded-full border border-[#e7e7e4] bg-white px-3 py-1.5 text-xs font-semibold text-[#171717] sm:self-auto">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-[#1f9d55]" /> {clock.dayName} · {clock.dateStr}
+        <span className="inline-flex items-center gap-2 self-start rounded-full border border-[#dce8f7] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#10233f] shadow-xs sm:self-auto">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" /> {clock.dayName} · {clock.dateStr}
         </span>
       </div>
 
@@ -102,7 +104,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab, o
 
       <section>
         <SectionLabel>Overview</SectionLabel>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5 lg:grid-cols-4">
           <StatCard title="Total Faculty" value={facultyList.length} context={`Across ${departmentCount} departments`} pill={{ label: `${free} free now`, tone: 'up' }} onClick={() => onNavigateTab('faculty', 'all')} />
           <StatCard title="Teaching Now" value={teaching} context={`${activePercent}% of faculty`} pill={{ label: 'Live now', tone: 'live' }} onClick={() => onNavigateTab('faculty', 'In Class')} />
           <StatCard title="Syllabus Coverage" value={`${syllabus.rate.toFixed(1)}%`} context="Modules completed" pill={{ label: `${syllabus.completed}/${syllabus.total} done`, tone: 'up' }} />
@@ -149,14 +151,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab, o
         <CourseFeedbackCard />
       </div>
 
-      <section className="rounded-2xl border border-[#e7e7e4] bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.045)] sm:p-6">
-        <div className="mb-4 flex items-center justify-between gap-3"><div><div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-amber-500" /><h3 className="text-sm font-extrabold text-[#171717]">Needs your attention</h3><span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700">{pendingLeaves.length} open</span></div><p className="mt-1 text-xs text-[#737373]">Approve leave requests and keep substitutions moving.</p></div><button onClick={() => onNavigateTab('leave')} className="inline-flex items-center gap-1 text-xs font-bold text-[#1f9d55] hover:underline">See all <ArrowRight className="h-3.5 w-3.5" /></button></div>
-        {pendingLeaves.length === 0 ? <div className="rounded-xl border border-dashed border-[#e2e2df] bg-[#fafaf9] py-8 text-center text-xs text-[#737373]">No pending requests. Your queue is clear.</div> : <div className="space-y-2.5">{pendingLeaves.slice(0, 3).map((leave) => <div key={leave.id} className="flex flex-col gap-3 rounded-xl border border-[#f0f0ee] bg-[#fafaf9] p-3.5 transition hover:border-[#cfe3d6] hover:bg-[#fafaf9] md:flex-row md:items-center md:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-extrabold text-[#171717]">{leave.facultyName}</span><span className="text-[11px] text-[#737373]">{leave.department}</span><span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">{leave.daysCount} days</span></div><p className="mt-1 truncate text-xs text-[#737373]">{leave.reason}</p><p className="mt-1 font-mono text-[10px] text-[#a3a3a3]">{leave.fromDate} → {leave.toDate} · {leave.substitutions.length} substitutions mapped</p></div><div className="flex shrink-0 items-center gap-2"><button onClick={() => updateLeaveRequestStatus(leave.id, 'Approved')} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700"><Check className="h-3.5 w-3.5" /> Approve</button><button onClick={() => updateLeaveRequestStatus(leave.id, 'Rejected')} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50"><XCircle className="h-3.5 w-3.5" /> Reject</button></div></div>)}</div>}
+      <section className="rounded-2xl border border-[#dce8f7] bg-white p-4.5 shadow-[0_10px_30px_rgba(31,76,126,0.06)] sm:p-5">
+        <div className="mb-3.5 flex items-center justify-between gap-3 border-b border-[#eaf2fc] pb-2.5"><div><div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-amber-500" /><h3 className="text-[13px] font-bold text-[#10233f]">Needs your attention</h3><span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">{pendingLeaves.length} open</span></div><p className="mt-0.5 text-[11px] text-[#657894]">Approve leave requests and keep substitutions moving.</p></div><button onClick={() => onNavigateTab('leave')} className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800">See all <ArrowRight className="h-3 w-3" /></button></div>
+        {pendingLeaves.length === 0 ? <div className="rounded-xl border border-dashed border-[#bfdbfe] bg-[#f8fbff] py-5 text-center text-[11px] text-[#657894]">No pending requests. Your queue is clear.</div> : <div className="space-y-2.5">{pendingLeaves.slice(0, 3).map((leave) => <div key={leave.id} className="flex flex-col gap-3 rounded-xl border border-[#e2ecf9] bg-[#f9fcff] p-3 transition hover:border-[#bfdbfe] md:flex-row md:items-center md:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-bold text-[#10233f]">{leave.facultyName}</span><span className="text-[11px] text-[#657894]">{leave.department}</span><span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">{leave.daysCount} days</span></div><p className="mt-1 truncate text-xs text-[#657894]">{leave.reason}</p><p className="mt-1 font-mono text-[10px] text-[#94a3b8]">{leave.fromDate} → {leave.toDate} · {leave.substitutions.length} substitutions mapped</p></div><div className="flex shrink-0 items-center gap-2"><button onClick={() => updateLeaveRequestStatus(leave.id, 'Approved')} className="inline-flex items-center gap-1.5 cursor-pointer rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs transition hover:bg-emerald-700"><Check className="h-3 w-3" /> Approve</button><button onClick={() => updateLeaveRequestStatus(leave.id, 'Rejected')} className="inline-flex items-center gap-1.5 cursor-pointer rounded-lg border border-red-200 bg-white px-3 py-1.5 text-[11px] font-bold text-red-600 transition hover:bg-red-50"><XCircle className="h-3 w-3" /> Reject</button></div></div>)}</div>}
       </section>
 
-      <section className="rounded-2xl border border-[#e7e7e4] bg-white p-5 shadow-[0_8px_24px_rgba(0,0,0,0.045)] sm:p-6">
-        <div className="mb-4 flex items-center justify-between"><div><h3 className="text-sm font-extrabold text-[#171717]">Faculty at a glance</h3><p className="mt-1 text-xs text-[#737373]">Live availability based on timetable and approved leave.</p></div><MoreHorizontal className="h-5 w-5 text-[#a3a3a3]" /></div>
-        <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">{facultyStatuses.map(({ faculty, detail }) => { const tone = detail.status === 'In Class' ? statusTone.teaching : detail.status === 'On Leave' ? statusTone.leave : statusTone.free; return <button key={faculty.id} onClick={() => onOpenFacultyDrawer(faculty.id)} className="group flex items-center gap-3 rounded-xl border border-[#f0f0ee] bg-[#fafaf9] p-3 text-left transition hover:-translate-y-0.5 hover:border-[#cfe3d6] hover:bg-white hover:shadow-sm"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eef6f0] text-xs font-extrabold text-[#1f9d55]">{faculty.avatarInitials}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold text-[#171717]">{faculty.name}</p><p className="mt-0.5 truncate text-[10px] text-[#737373]">{faculty.department} · {faculty.currentSection}</p></div><span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold ${tone.bg} ${tone.text}`}><span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />{tone.label}</span></button>; })}</div>
+      <section className="rounded-2xl border border-[#dce8f7] bg-white p-4.5 shadow-[0_10px_30px_rgba(31,76,126,0.06)] sm:p-5">
+        <div className="mb-3.5 flex items-center justify-between border-b border-[#eaf2fc] pb-2.5"><div><h3 className="text-[13px] font-bold text-[#10233f]">Faculty at a glance</h3><p className="mt-0.5 text-[11px] text-[#657894]">Live availability based on timetable and approved leave.</p></div><MoreHorizontal className="h-5 w-5 text-[#94a3b8]" /></div>
+        <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">{facultyStatuses.map(({ faculty, detail }) => { const tone = detail.status === 'In Class' ? statusTone.teaching : detail.status === 'On Leave' ? statusTone.leave : statusTone.free; return <button key={faculty.id} onClick={() => onOpenFacultyDrawer(faculty.id)} className="group flex items-center gap-3 cursor-pointer rounded-xl border border-[#e2ecf9] bg-[#f9fcff] p-3 text-left transition hover:-translate-y-0.5 hover:border-[#bfdbfe] hover:bg-white hover:shadow-sm"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-xs font-bold text-white shadow-xs">{faculty.avatarInitials}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-bold text-[#10233f]">{faculty.name}</p><p className="mt-0.5 truncate text-[10px] text-[#657894]">{faculty.department} · {faculty.currentSection}</p></div><span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold ${tone.bg} ${tone.text}`}><span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />{tone.label}</span></button>; })}</div>
       </section>
     </div>
   );
