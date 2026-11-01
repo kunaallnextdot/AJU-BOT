@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+<<<<<<< HEAD
 import { FacultyMember, FacultySubject, LeaveRequest } from '../types';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -10,6 +11,20 @@ export const supabase: SupabaseClient | null = url && anonKey ? createClient(url
 // ---- Row shapes of the Supabase tables (snake_case columns, JSON for nested lists) ----
 
 interface FacultyRow {
+=======
+import { FacultyMember, LeaveRequest } from '../types';
+
+// import.meta.env is undefined when this file is imported by the Node seed script
+const url = import.meta.env?.VITE_SUPABASE_URL as string | undefined;
+const key = import.meta.env?.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+/** Null when the env vars are missing, so the app falls back to its bundled seed data. */
+export const supabase: SupabaseClient | null = url && key ? createClient(url, key) : null;
+
+// ---------- faculty ----------
+
+export interface FacultyRow {
+>>>>>>> 6bae4c969c2b86bdffa15cf9489199c3b32ba1ee
   id: string;
   name: string;
   email: string;
@@ -24,6 +39,7 @@ interface FacultyRow {
   avatar_initials: string;
   current_section: string;
   timetable: FacultyMember['timetable'];
+<<<<<<< HEAD
   subjects: FacultySubject[];
 }
 
@@ -48,11 +64,42 @@ const facultyFromRow = (r: FacultyRow): FacultyMember => ({
   id: r.id,
   name: r.name,
   role: 'faculty',
+=======
+  subjects: FacultyMember['subjects'];
+}
+
+export const facultyToRow = (f: FacultyMember): FacultyRow => ({
+  id: f.id,
+  name: f.name,
+  email: f.email,
+  position: f.position,
+  designation: f.designation ?? null,
+  department: f.department,
+  dept_short: f.deptShort,
+  phone: f.phone ?? null,
+  employee_code: f.employeeCode ?? null,
+  cabin: f.cabin ?? null,
+  joined_on: f.joinedOn ?? null,
+  avatar_initials: f.avatarInitials,
+  current_section: f.currentSection,
+  timetable: f.timetable,
+  subjects: f.subjects,
+});
+
+export const rowToFaculty = (r: FacultyRow): FacultyMember => ({
+  id: r.id,
+  name: r.name,
+  role: 'faculty',
+  email: r.email,
+>>>>>>> 6bae4c969c2b86bdffa15cf9489199c3b32ba1ee
   position: r.position,
   designation: r.designation ?? undefined,
   department: r.department,
   deptShort: r.dept_short,
+<<<<<<< HEAD
   email: r.email,
+=======
+>>>>>>> 6bae4c969c2b86bdffa15cf9489199c3b32ba1ee
   phone: r.phone,
   employeeCode: r.employee_code ?? undefined,
   cabin: r.cabin,
@@ -63,6 +110,7 @@ const facultyFromRow = (r: FacultyRow): FacultyMember => ({
   subjects: r.subjects ?? [],
 });
 
+<<<<<<< HEAD
 const leaveFromRow = (r: LeaveRow): LeaveRequest => ({
   id: r.id,
   facultyId: r.faculty_id,
@@ -81,6 +129,28 @@ const leaveFromRow = (r: LeaveRow): LeaveRequest => ({
 });
 
 const leaveToRow = (l: LeaveRequest): LeaveRow => ({
+=======
+// ---------- leave requests ----------
+
+export interface LeaveRow {
+  id: string;
+  faculty_id: string;
+  faculty_name: string;
+  department: string;
+  dept_short: string;
+  leave_type: string | null;
+  from_date: string;
+  to_date: string;
+  days_count: number;
+  reason: string;
+  substitutions: LeaveRequest['substitutions'];
+  status: LeaveRequest['status'];
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+export const leaveToRow = (l: LeaveRequest): LeaveRow => ({
+>>>>>>> 6bae4c969c2b86bdffa15cf9489199c3b32ba1ee
   id: l.id,
   faculty_id: l.facultyId,
   faculty_name: l.facultyName,
@@ -91,6 +161,7 @@ const leaveToRow = (l: LeaveRequest): LeaveRow => ({
   to_date: l.toDate,
   days_count: l.daysCount,
   reason: l.reason,
+<<<<<<< HEAD
   status: l.status,
   created_at: l.createdAt,
   reviewed_at: l.reviewedAt ?? null,
@@ -157,3 +228,27 @@ export const subscribeToChanges = (onChange: (table: 'faculty' | 'leave_requests
     supabase.removeChannel(channel);
   };
 };
+=======
+  substitutions: l.substitutions,
+  status: l.status,
+  created_at: l.createdAt,
+  reviewed_at: l.reviewedAt ?? null,
+});
+
+export const rowToLeave = (r: LeaveRow): LeaveRequest => ({
+  id: r.id,
+  facultyId: r.faculty_id,
+  facultyName: r.faculty_name,
+  department: r.department,
+  deptShort: r.dept_short,
+  leaveType: (r.leave_type ?? undefined) as LeaveRequest['leaveType'],
+  fromDate: r.from_date,
+  toDate: r.to_date,
+  daysCount: r.days_count,
+  reason: r.reason,
+  substitutions: r.substitutions ?? [],
+  status: r.status,
+  createdAt: r.created_at,
+  reviewedAt: r.reviewed_at,
+});
+>>>>>>> 6bae4c969c2b86bdffa15cf9489199c3b32ba1ee

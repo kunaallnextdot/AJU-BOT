@@ -7,21 +7,23 @@ const DAYS: WeekDay[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
 
 // Session outcome colours (validated with the dataviz palette checker; always shown with labels)
 const OUTCOME = {
-  completed: { label: 'Held', color: '#2f8f57' },
+  completed: { label: 'Held', color: '#2563eb' },
   substituted: { label: 'Substituted', color: '#d08a1e' },
   cancelled: { label: 'Cancelled', color: '#c9443c' },
 } as const;
 type Outcome = keyof typeof OUTCOME;
 
 const Card: React.FC<{ icon: React.ElementType; title: string; subtitle: string; action?: React.ReactNode; children: React.ReactNode }> = ({ icon: Icon, title, subtitle, action, children }) => (
-  <section className="rounded-xl border border-[#e7e7e4] bg-white p-4 sm:p-5">
-    <div className="mb-4 flex items-start justify-between gap-3">
-      <div>
-        <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-[#2f5d50]" />
-          <h3 className="text-[15px] font-bold text-[#171717]">{title}</h3>
+  <section className="rounded-2xl border border-[#dce8f7] bg-white p-4.5 shadow-[0_10px_30px_rgba(31,76,126,0.06)] sm:p-5">
+    <div className="mb-3.5 flex items-start justify-between gap-3 border-b border-[#eaf2fc] pb-2.5">
+      <div className="flex items-start gap-2.5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white shadow-xs">
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+        <div>
+          <h3 className="text-[13px] font-bold text-[#10233f]">{title}</h3>
+          <p className="mt-0.5 text-[11px] text-[#657894]">{subtitle}</p>
         </div>
-        <p className="mt-0.5 text-[12px] text-[#737373]">{subtitle}</p>
       </div>
       {action}
     </div>
@@ -30,7 +32,7 @@ const Card: React.FC<{ icon: React.ElementType; title: string; subtitle: string;
 );
 
 const Legend: React.FC = () => (
-  <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#525252]">
+  <div className="flex flex-wrap items-center gap-3 text-[11px] text-[#475569]">
     {(Object.keys(OUTCOME) as Outcome[]).map((k) => (
       <span key={k} className="inline-flex items-center gap-1.5">
         <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: OUTCOME[k].color }} />
@@ -83,7 +85,7 @@ export const WeeklyClassesChart: React.FC = () => {
       action={<Legend />}
     >
       <div className="relative">
-        <div className="flex items-end justify-around gap-3 border-b border-[#e7e7e4]" style={{ height: BAR_H + 24 }}>
+        <div className="flex items-end justify-around gap-3 border-b border-[#dce8f7]" style={{ height: BAR_H + 24 }}>
           {days.map((d) => {
             const isToday = d.date === clock.dateStr;
             return (
@@ -96,7 +98,7 @@ export const WeeklyClassesChart: React.FC = () => {
                 className="group relative flex h-full w-full max-w-[72px] flex-col items-center justify-end"
                 aria-label={`${d.day}: ${d.completed} held, ${d.substituted} substituted, ${d.cancelled} cancelled`}
               >
-                <span className="mb-1 text-[12px] font-semibold tabular-nums text-[#171717]">{d.total}</span>
+                <span className="mb-1 text-[12px] font-semibold tabular-nums text-[#10233f]">{d.total}</span>
                 {/* stacked from the baseline up; 2px surface gaps between segments */}
                 <span className="flex w-9 flex-col-reverse gap-[2px]" style={{ height: (d.total / max) * BAR_H }}>
                   {(['completed', 'substituted', 'cancelled'] as Outcome[]).map((k, i, arr) =>
@@ -109,7 +111,7 @@ export const WeeklyClassesChart: React.FC = () => {
                     ) : null
                   )}
                 </span>
-                {isToday && <span className="absolute -bottom-0.5 h-0.5 w-9 bg-[#171717]" />}
+                {isToday && <span className="absolute -bottom-0.5 h-0.5 w-9 bg-[#2563eb]" />}
               </button>
             );
           })}
@@ -117,26 +119,26 @@ export const WeeklyClassesChart: React.FC = () => {
         <div className="mt-2 flex justify-around gap-3">
           {days.map((d) => (
             <div key={d.day} className="w-full max-w-[72px] text-center">
-              <p className={`text-[12px] font-semibold ${d.date === clock.dateStr ? 'text-[#171717]' : 'text-[#525252]'}`}>{d.day.slice(0, 3)}{d.date === clock.dateStr ? ' · Today' : ''}</p>
-              <p className="text-[11px] text-[#737373]">{d.attendance !== null ? `${d.attendance}% present` : '—'}</p>
+              <p className={`text-[12px] font-semibold ${d.date === clock.dateStr ? 'text-[#10233f]' : 'text-[#475569]'}`}>{d.day.slice(0, 3)}{d.date === clock.dateStr ? ' · Today' : ''}</p>
+              <p className="text-[11px] text-[#657894]">{d.attendance !== null ? `${d.attendance}% present` : '—'}</p>
             </div>
           ))}
         </div>
 
         {active && (
-          <div className="pointer-events-none absolute right-0 top-0 z-10 w-60 rounded-lg border border-[#e7e7e4] bg-white p-3 text-[12px] shadow-[0_12px_30px_rgba(0,0,0,0.12)]">
-            <p className="font-bold text-[#171717]">{active.day} · {active.date}</p>
-            <div className="mt-1.5 space-y-0.5 text-[#404040]">
+          <div className="pointer-events-none absolute right-0 top-0 z-10 w-60 rounded-xl border border-[#dce8f7] bg-white p-3 text-[12px] shadow-[0_12px_30px_rgba(0,0,0,0.12)]">
+            <p className="font-bold text-[#10233f]">{active.day} · {active.date}</p>
+            <div className="mt-1.5 space-y-0.5 text-[#334155]">
               {(Object.keys(OUTCOME) as Outcome[]).map((k) => (
                 <p key={k} className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm" style={{ backgroundColor: OUTCOME[k].color }} />{OUTCOME[k].label}</span>
                   <span className="font-semibold tabular-nums">{active[k]}</span>
                 </p>
               ))}
-              <p className="flex justify-between border-t border-[#f0f0ee] pt-1"><span>Attendance</span><span className="font-semibold">{active.attendance ?? '—'}%</span></p>
+              <p className="flex justify-between border-t border-[#f0f5fc] pt-1"><span>Attendance</span><span className="font-semibold">{active.attendance ?? '—'}%</span></p>
             </div>
             {active.notes.map((n) => (
-              <p key={n.id} className="mt-1.5 text-[11px] text-[#737373]">{n.periodLabel} {n.subject}: {n.remarks}</p>
+              <p key={n.id} className="mt-1.5 text-[11px] text-[#657894]">{n.periodLabel} {n.subject}: {n.remarks}</p>
             ))}
           </div>
         )}
@@ -175,25 +177,25 @@ export const TeachingLoadChart: React.FC<{ onOpenFaculty: (id: string) => void }
             onClick={() => onOpenFaculty(r.id)}
             onMouseEnter={() => setHover(r.id)}
             onMouseLeave={() => setHover(null)}
-            className="grid w-full grid-cols-[140px_1fr_auto] items-center gap-3 rounded-md px-1 py-0.5 text-left hover:bg-[#fafaf9] sm:grid-cols-[170px_1fr_auto]"
+            className="grid w-full grid-cols-[140px_1fr_auto] items-center gap-3 rounded-md px-1 py-0.5 text-left hover:bg-[#f8fbff] sm:grid-cols-[170px_1fr_auto]"
           >
-            <span className="truncate text-[13px] text-[#171717]">{r.name}</span>
+            <span className="truncate text-[13px] text-[#10233f]">{r.name}</span>
             <span className="relative h-5">
               <span
                 className={`absolute inset-y-0 left-0 rounded-r transition-opacity ${hover && hover !== r.id ? 'opacity-40' : ''}`}
-                style={{ width: `${(r.periods / max) * 100}%`, backgroundColor: '#2f5d50' }}
+                style={{ width: `${(r.periods / max) * 100}%`, background: 'linear-gradient(90deg, #2563eb, #1d4ed8)' }}
               />
               {/* average marker */}
-              <span className="absolute inset-y-[-3px] w-px bg-[#171717]/40" style={{ left: `${(avg / max) * 100}%` }} />
+              <span className="absolute inset-y-[-3px] w-px bg-[#10233f]/40" style={{ left: `${(avg / max) * 100}%` }} />
             </span>
-            <span className="w-24 text-right text-[12px] tabular-nums text-[#404040]">
+            <span className="w-24 text-right text-[12px] tabular-nums text-[#334155]">
               {hover === r.id ? `${r.days} days · ${r.courses.join(', ')}` : `${r.periods} periods`}
             </span>
           </button>
         ))}
       </div>
-      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-[#737373]">
-        <span className="inline-block h-3 w-px bg-[#171717]/40" /> Average load · click a name to open the profile
+      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-[#657894]">
+        <span className="inline-block h-3 w-px bg-[#10233f]/40" /> Average load · click a name to open the profile
       </p>
     </Card>
   );
@@ -210,27 +212,27 @@ export const CampusPresenceCard: React.FC = () => {
     <Card icon={UserCheck} title="Campus presence" subtitle={`Check-ins for ${clock.dayName}, ${clock.dateStr}`}>
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: 'In campus', value: count('In Campus'), tone: 'text-[#17803f]' },
-          { label: 'Off campus', value: count('Off Campus'), tone: 'text-[#525252]' },
-          { label: 'On leave', value: count('On Leave'), tone: 'text-[#a66c00]' },
+          { label: 'In campus', value: count('In Campus'), tone: 'text-[#047857]' },
+          { label: 'Off campus', value: count('Off Campus'), tone: 'text-[#475569]' },
+          { label: 'On leave', value: count('On Leave'), tone: 'text-amber-700' },
         ].map((t) => (
-          <div key={t.label} className="rounded-lg bg-[#f7f7f5] px-3 py-2.5">
-            <p className="text-[11px] text-[#737373]">{t.label}</p>
-            <p className={`text-xl font-bold tabular-nums ${t.tone}`}>{t.value}</p>
+          <div key={t.label} className="rounded-xl border border-[#e2ecf9] bg-[#f9fcff] px-3 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#657894]">{t.label}</p>
+            <p className={`font-mono text-xl font-extrabold tabular-nums ${t.tone}`}>{t.value}</p>
           </div>
         ))}
       </div>
       {noRecord === records.length ? (
-        <p className="mt-3 rounded-lg border border-dashed border-[#e2e2df] px-3 py-4 text-center text-[12px] text-[#737373]">No check-in records for this date.</p>
+        <p className="mt-3 rounded-lg border border-dashed border-[#bfdbfe] px-3 py-4 text-center text-[12px] text-[#657894]">No check-in records for this date.</p>
       ) : (
         <div className="mt-3 max-h-[220px] space-y-1 overflow-y-auto">
           {records.map(({ f, p }) => (
-            <div key={f.id} className="flex items-center justify-between rounded-md px-2 py-1.5 text-[12px] hover:bg-[#fafaf9]">
-              <span className="flex items-center gap-2 text-[#171717]">
-                <span className={`h-1.5 w-1.5 rounded-full ${p?.status === 'In Campus' ? 'bg-[#1f9d55]' : p?.status === 'On Leave' ? 'bg-[#d08a1e]' : 'bg-[#a3a3a3]'}`} />
+            <div key={f.id} className="flex items-center justify-between rounded-md px-2 py-1.5 text-[12px] hover:bg-[#f8fbff]">
+              <span className="flex items-center gap-2 text-[#10233f]">
+                <span className={`h-1.5 w-1.5 rounded-full ${p?.status === 'In Campus' ? 'bg-[#2563eb]' : p?.status === 'On Leave' ? 'bg-[#d08a1e]' : 'bg-[#94a3b8]'}`} />
                 {f.name}
               </span>
-              <span className="tabular-nums text-[#737373]">{p?.checkIn ? `${p.checkIn} – ${p.checkOut} · ${p.room}` : p?.status ?? 'No record'}</span>
+              <span className="tabular-nums text-[#657894]">{p?.checkIn ? `${p.checkIn} – ${p.checkOut} · ${p.room}` : p?.status ?? 'No record'}</span>
             </div>
           ))}
         </div>
@@ -252,38 +254,38 @@ export const CourseFeedbackCard: React.FC = () => {
       subtitle={`${done.length} of ${feedback.length} courses collected · average rating ${avg.toFixed(1)} / 5`}
     >
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px] text-left text-[13px]">
+        <table className="data-table w-full min-w-[560px] border-collapse text-left">
           <thead>
-            <tr className="border-b border-[#e7e7e4] text-[12px] text-[#737373]">
-              <th className="py-2 pr-3 font-semibold">Course</th>
-              <th className="py-2 pr-3 font-semibold">Faculty</th>
-              <th className="py-2 pr-3 font-semibold">Section</th>
-              <th className="py-2 pr-3 font-semibold">Status</th>
-              <th className="py-2 text-right font-semibold">Rating</th>
+            <tr className="border-b border-[#eaf2fc]">
+              <th className="py-2.5 pr-3">Course</th>
+              <th className="py-2.5 pr-3">Faculty</th>
+              <th className="py-2.5 pr-3">Section</th>
+              <th className="py-2.5 pr-3">Status</th>
+              <th className="py-2.5 text-right">Rating</th>
             </tr>
           </thead>
           <tbody>
             {feedback.map((f) => (
-              <tr key={f.assignmentId} className="border-b border-[#f0f0ee] last:border-0">
+              <tr key={f.assignmentId} className="border-b border-[#f0f6ff] last:border-0 hover:bg-[#f9fcff]">
                 <td className="py-2 pr-3">
-                  <p className="text-[#171717]">{f.courseTitle}</p>
-                  <p className="text-[11px] text-[#737373]">{f.courseCode} · {f.category}</p>
+                  <p className="font-semibold text-[#10233f]">{f.courseTitle}</p>
+                  <p className="text-[11px] text-[#657894]">{f.courseCode} · {f.category}</p>
                 </td>
-                <td className="py-2 pr-3 text-[#404040]">{f.facultyName}</td>
-                <td className="whitespace-nowrap py-2 pr-3 text-[#404040]">{f.sectionLabel}</td>
+                <td className="py-2 pr-3 text-[#334155]">{f.facultyName}</td>
+                <td className="whitespace-nowrap py-2 pr-3 text-[#334155]">{f.sectionLabel}</td>
                 <td className="py-2 pr-3">
-                  <span className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${f.status === 'Done' ? 'bg-[#e7f6ec] text-[#17803f]' : 'bg-[#fff6df] text-[#a66c00]'}`}>{f.status}</span>
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${f.status === 'Done' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>{f.status}</span>
                 </td>
-                <td className="py-2 text-right tabular-nums text-[#171717]">
+                <td className="py-2 text-right tabular-nums text-[#10233f]">
                   {f.avgRating !== null ? (
                     <span className="inline-flex items-center justify-end gap-2">
-                      <span className="hidden h-1.5 w-16 overflow-hidden rounded-full bg-[#efefed] sm:inline-block">
-                        <span className="block h-full rounded-full bg-[#2f5d50]" style={{ width: `${(f.avgRating / 5) * 100}%` }} />
+                      <span className="hidden h-1.5 w-16 overflow-hidden rounded-full bg-[#eaf2fc] sm:inline-block">
+                        <span className="block h-full rounded-full bg-[#1d4ed8]" style={{ width: `${(f.avgRating / 5) * 100}%` }} />
                       </span>
-                      {f.avgRating.toFixed(1)} <span className="text-[11px] text-[#737373]">({f.responses})</span>
+                      {f.avgRating.toFixed(1)} <span className="text-[11px] text-[#657894]">({f.responses})</span>
                     </span>
                   ) : (
-                    <span className="text-[#a3a3a3]">—</span>
+                    <span className="text-[#94a3b8]">—</span>
                   )}
                 </td>
               </tr>

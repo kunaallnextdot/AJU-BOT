@@ -13,14 +13,14 @@ export const ADMIN_USER: AdminUser = {
 export const THEME_PALETTES: ThemeConfig[] = [
   {
     id: 'royal-blue',
-    name: 'AJU Ink & Green (Official)',
-    accent: 'green',
-    primaryHex: '#171717',
-    deepHex: '#2f5d50',
-    lightHex: '#efefed',
-    borderHex: '#e2e2df',
-    glowHex: 'rgba(31, 157, 85, 0.18)',
-    description: 'Neutral ink surfaces with a calm green accent',
+    name: 'Royal Blue (Official)',
+    accent: 'blue',
+    primaryHex: '#2563eb',
+    deepHex: '#1d4ed8',
+    lightHex: '#eff6ff',
+    borderHex: '#bfdbfe',
+    glowHex: 'rgba(37, 99, 235, 0.25)',
+    description: 'Crisp university flagship navy and sapphire accent',
   },
   {
     id: 'ocean-teal',
