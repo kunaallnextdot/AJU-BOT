@@ -149,7 +149,7 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
         </span>
 
         {/* Live Academic Clock Badge */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#dce8f7] bg-[#f8fbff] text-[11px] font-semibold text-[#10233f] shadow-xs select-none">
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#dce8f7] bg-[#f8fbff] text-[11px] font-semibold text-[#10233f] shadow-xs select-none">
           <Clock
             className="w-3 h-3 shrink-0"
             style={{ color: currentTheme.primaryHex }}

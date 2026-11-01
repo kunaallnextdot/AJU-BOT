@@ -161,13 +161,13 @@ export const AcademicCalendar: React.FC = () => {
       </div>
 
       {/* Month Grid */}
-      <div className="bg-white rounded-2xl border border-[#dce8f7] p-5 sm:p-6 shadow-[0_10px_30px_rgba(31,76,126,0.06)]">
+      <div className="bg-white rounded-2xl border border-[#dce8f7] p-2.5 sm:p-6 shadow-[0_10px_30px_rgba(31,76,126,0.06)]">
         {/* Days of week header */}
-        <div className="grid grid-cols-7 gap-2 mb-2 text-center">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 text-center">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
             <div
               key={d}
-              className="text-[11px] font-bold uppercase tracking-wider text-[#657894] py-1"
+              className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-[#657894] py-1"
             >
               {d}
             </div>
@@ -175,12 +175,12 @@ export const AcademicCalendar: React.FC = () => {
         </div>
 
         {/* Days Cells */}
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {/* Leading days from prev month */}
           {Array.from({ length: leadingDays }).map((_, i) => (
             <div
               key={`prev-${i}`}
-              className="min-h-22 p-2 rounded-xl bg-[#f8fbff] border border-transparent text-[#cbd5e1] text-xs font-mono select-none"
+              className="min-h-14 overflow-hidden p-1 sm:min-h-22 sm:p-2 rounded-xl bg-[#f8fbff] border border-transparent text-[#cbd5e1] text-xs font-mono select-none"
             >
               {prevMonthDays - leadingDays + i + 1}
             </div>
@@ -196,7 +196,7 @@ export const AcademicCalendar: React.FC = () => {
             return (
               <div
                 key={dayNum}
-                className={`min-h-24 p-2.5 rounded-xl border transition-all flex flex-col justify-between ${
+                className={`min-h-16 min-w-0 overflow-hidden p-1 sm:min-h-24 sm:p-2.5 rounded-xl border transition-all flex flex-col justify-between ${
                   isToday
                     ? 'bg-blue-50/40 shadow-xs'
                     : 'bg-white hover:bg-[#f8fbff] border-[#eaf2fc]'
@@ -219,7 +219,7 @@ export const AcademicCalendar: React.FC = () => {
                   </span>
                   {isToday && (
                     <span
-                      className="text-[9px] font-bold px-1.5 py-0.2 rounded text-white font-sans"
+                      className="hidden sm:inline text-[9px] font-bold px-1.5 py-0.2 rounded text-white font-sans"
                       style={{ backgroundColor: currentTheme.primaryHex }}
                     >
                       Today
@@ -230,7 +230,7 @@ export const AcademicCalendar: React.FC = () => {
                 {/* Holiday pill if any */}
                 {holiday && (
                   <div
-                    className={`mt-1.5 p-1.5 rounded-lg border text-[10px] font-semibold leading-tight flex flex-col gap-0.5 ${
+                    className={`mt-1 p-0.5 sm:mt-1.5 sm:p-1.5 rounded-lg border text-[8px] sm:text-[10px] font-semibold leading-tight flex flex-col gap-0.5 ${
                       getTypeBadge(holiday.type).bg
                     }`}
                     title={holiday.description}

@@ -39,7 +39,7 @@ export const AdminLeave: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto">
+        <div className="flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-x-auto">
           {[
             { id: 'all', label: 'All Requests' },
             { id: 'Pending', label: 'Pending' },

@@ -277,6 +277,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab, o
           </div>
         )}
       </div>
+<<<<<<< HEAD
+=======
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1.4fr]">
+        <TeachingLoadChart onOpenFaculty={onOpenFacultyDrawer} />
+        <CourseFeedbackCard />
+      </div>
+
+      <section className="rounded-2xl border border-[#dce8f7] bg-white p-4.5 shadow-[0_10px_30px_rgba(31,76,126,0.06)] sm:p-5">
+        <div className="mb-3.5 flex items-center justify-between gap-3 border-b border-[#eaf2fc] pb-2.5"><div><div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-amber-500" /><h3 className="text-[13px] font-bold text-[#10233f]">Needs your attention</h3><span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">{pendingLeaves.length} open</span></div><p className="mt-0.5 text-[11px] text-[#657894]">Approve leave requests and keep substitutions moving.</p></div><button onClick={() => onNavigateTab('leave')} className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800">See all <ArrowRight className="h-3 w-3" /></button></div>
+        {pendingLeaves.length === 0 ? <div className="rounded-xl border border-dashed border-[#bfdbfe] bg-[#f8fbff] py-5 text-center text-[11px] text-[#657894]">No pending requests. Your queue is clear.</div> : <div className="space-y-2.5">{pendingLeaves.slice(0, 3).map((leave) => <div key={leave.id} className="flex flex-col gap-3 rounded-xl border border-[#e2ecf9] bg-[#f9fcff] p-3 transition hover:border-[#bfdbfe] md:flex-row md:items-center md:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-bold text-[#10233f]">{leave.facultyName}</span><span className="text-[11px] text-[#657894]">{leave.department}</span><span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">{leave.daysCount} days</span></div><p className="mt-1 truncate text-xs text-[#657894]">{leave.reason}</p><p className="mt-1 font-mono text-[10px] text-[#94a3b8]">{leave.fromDate} → {leave.toDate} · {leave.substitutions.length} substitutions mapped</p></div><div className="flex shrink-0 items-center gap-2"><button onClick={() => updateLeaveRequestStatus(leave.id, 'Approved')} className="inline-flex items-center gap-1.5 cursor-pointer rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs transition hover:bg-emerald-700"><Check className="h-3 w-3" /> Approve</button><button onClick={() => updateLeaveRequestStatus(leave.id, 'Rejected')} className="inline-flex items-center gap-1.5 cursor-pointer rounded-lg border border-red-200 bg-white px-3 py-1.5 text-[11px] font-bold text-red-600 transition hover:bg-red-50"><XCircle className="h-3 w-3" /> Reject</button></div></div>)}</div>}
+      </section>
+
+      <section className="rounded-2xl border border-[#dce8f7] bg-white p-4.5 shadow-[0_10px_30px_rgba(31,76,126,0.06)] sm:p-5">
+        <div className="mb-3.5 flex items-center justify-between border-b border-[#eaf2fc] pb-2.5"><div><h3 className="text-[13px] font-bold text-[#10233f]">Faculty at a glance</h3><p className="mt-0.5 text-[11px] text-[#657894]">Live availability based on timetable and approved leave.</p></div><MoreHorizontal className="h-5 w-5 text-[#94a3b8]" /></div>
+        <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">{facultyStatuses.map(({ faculty, detail }) => { const tone = detail.status === 'In Class' ? statusTone.teaching : detail.status === 'On Leave' ? statusTone.leave : statusTone.free; return <button key={faculty.id} onClick={() => onOpenFacultyDrawer(faculty.id)} className="group flex w-full min-w-0 items-center gap-3 cursor-pointer rounded-xl border border-[#e2ecf9] bg-[#f9fcff] p-3 text-left transition hover:-translate-y-0.5 hover:border-[#bfdbfe] hover:bg-white hover:shadow-sm"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-xs font-bold text-white shadow-xs">{faculty.avatarInitials}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-bold text-[#10233f]">{faculty.name}</p><p className="mt-0.5 truncate text-[10px] text-[#657894]">{faculty.department} · {faculty.currentSection}</p></div><span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold ${tone.bg} ${tone.text}`}><span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />{tone.label}</span></button>; })}</div>
+      </section>
+>>>>>>> c9a1be5fec47a36822c7c8d56fef1cbb3134cfbf
     </div>
   );
 };
