@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Splash } from './components/Splash';
 import { Login } from './components/Login';
@@ -27,6 +27,15 @@ const MainAppContent: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [adminTab, setAdminTab] = useState<AdminViewTab>('dashboard');
   const [facultyTab, setFacultyTab] = useState<FacultyViewTab>('my-day');
+
+  // Every sign-in starts on the home page, not wherever the previous user left off
+  useEffect(() => {
+    if (currentUser) return;
+    setAdminTab('dashboard');
+    setFacultyTab('my-day');
+    setAdminFacultyFilter('all');
+    setSelectedFacultyForDrawer(null);
+  }, [currentUser]);
   const [adminFacultyFilter, setAdminFacultyFilter] = useState<string>('all');
   const [selectedFacultyForDrawer, setSelectedFacultyForDrawer] = useState<FacultyMember | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

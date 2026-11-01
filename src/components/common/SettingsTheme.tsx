@@ -65,7 +65,7 @@ export const SettingsTheme: React.FC = () => {
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
           <div>
             <h3 className="text-[13px] font-bold text-[#10233f]">Institutional access</h3>
-            <p className="mt-1 text-xs leading-5 text-[#657894]">Your current browser session is verified for AJU BOT academic operations. Data changes are saved locally on this device.</p>
+            <p className="mt-1 text-xs leading-5 text-[#657894]">Your current browser session is verified for AJU BOT academic operations. Changes are saved to the AJU database, and kept on this device if the connection drops.</p>
             <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
               <LockKeyhole className="h-3.5 w-3.5" /> Verified session
             </div>

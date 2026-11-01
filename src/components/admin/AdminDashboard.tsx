@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
-  BookOpen,
-  CalendarCheck,
   ArrowRight,
+  BookOpen,
+  CalendarClock,
   Check,
-  MoreHorizontal,
+  CheckCircle2,
+  ChevronDown,
+  ClipboardCheck,
+  Users,
   XCircle,
 } from 'lucide-react';
-import { LiveStrip, ModuleCard, SectionLabel, StatCard } from '../common/ui';
 import { RecentActivity } from './RecentActivity';
 import { CampusPresenceCard, CourseFeedbackCard, TeachingLoadChart, WeeklyClassesChart } from './AdminCharts';
 
@@ -17,149 +19,264 @@ interface AdminDashboardProps {
   onOpenFacultyDrawer: (facultyId: string) => void;
 }
 
-const statusTone = {
-  teaching: { label: 'In class', dot: 'bg-blue-600', text: 'text-blue-700', bg: 'bg-blue-50' },
-  free: { label: 'Free now', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' },
-  leave: { label: 'On leave', dot: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50' },
-};
+// One place for the three faculty states, so the summary and the list always agree
+const STATUS = {
+  'In Class': { label: 'In class', dot: 'bg-blue-600', chip: 'bg-blue-50 text-blue-700' },
+  Free: { label: 'Free', dot: 'bg-emerald-500', chip: 'bg-emerald-50 text-emerald-700' },
+  'On Leave': { label: 'On leave', dot: 'bg-amber-500', chip: 'bg-amber-50 text-amber-700' },
+} as const;
+
+const Section: React.FC<{ title: string; hint: string; action?: React.ReactNode; children: React.ReactNode }> = ({ title, hint, action, children }) => (
+  <section className="rounded-2xl border border-[#dce8f7] bg-white p-5">
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h3 className="text-[15px] font-bold text-[#10233f]">{title}</h3>
+        <p className="mt-0.5 text-[13px] text-[#657894]">{hint}</p>
+      </div>
+      {action}
+    </div>
+    {children}
+  </section>
+);
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab, onOpenFacultyDrawer }) => {
-  const { currentUser, facultyList, leaveRequests, getFacultyLiveStatus, clock, updateLeaveRequestStatus, sessions } = useApp();
+  const { facultyList, leaveRequests, getFacultyLiveStatus, clock, updateLeaveRequestStatus, sessions, feedback } = useApp();
+  const [showReports, setShowReports] = useState(false);
 
-  const greeting = (() => {
-    const hour = Number(clock.timeStr.split(':')[0]);
-    return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  })();
+  const hour = Number(clock.timeStr.split(':')[0]);
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const facultyStatuses = facultyList.map((faculty) => ({ faculty, detail: getFacultyLiveStatus(faculty.id) }));
-  const teaching = facultyStatuses.filter(({ detail }) => detail.status === 'In Class').length;
-  const free = facultyStatuses.filter(({ detail }) => detail.status === 'Free').length;
-  const onLeave = facultyStatuses.filter(({ detail }) => detail.status === 'On Leave').length;
-  const pendingLeaves = leaveRequests.filter((leave) => leave.status === 'Pending');
-  const activePercent = facultyList.length ? Math.round((teaching / facultyList.length) * 100) : 0;
-  const departmentCount = new Set(facultyList.map((f) => f.department)).size;
+  // ---- Today ----
+  const people = facultyList.map((faculty) => ({ faculty, detail: getFacultyLiveStatus(faculty.id) }));
+  const byStatus = (s: keyof typeof STATUS) => people.filter(({ detail }) => detail.status === s);
+  const inClass = byStatus('In Class');
+  const free = byStatus('Free');
+  const onLeave = byStatus('On Leave');
 
-  const currentlyTeaching = facultyStatuses.find(({ detail }) => detail.status === 'In Class');
-  const sessionsToday = sessions.filter((x) => x.date === clock.dateStr);
-  const classesToday = facultyList.reduce((n, f) => n + f.timetable.filter((slot) => slot.day === clock.dayName).length, 0);
-  const substitutionsToday = leaveRequests
-    .filter((leave) => leave.status !== 'Rejected')
-    .reduce((n, leave) => n + leave.substitutions.filter((sub) => sub.date === clock.dateStr).length, 0);
+  const classesToday = facultyList.flatMap((f) => f.timetable.filter((slot) => slot.day === clock.dayName));
+  const classesDone = classesToday.filter((slot) => slot.endTime <= clock.timeStr).length;
+  const pending = leaveRequests.filter((l) => l.status === 'Pending');
 
-  // Who is free right now, or failing that, who finishes their current class first
-  const nextFree = (() => {
-    const freeNow = facultyStatuses.find(({ detail }) => detail.status === 'Free');
-    if (freeNow) return { name: freeNow.faculty.name, note: `${freeNow.faculty.department} · available now` };
-    const soonest = facultyStatuses
-      .filter(({ detail }) => detail.status === 'In Class' && detail.currentClass)
-      .sort((a, b) => a.detail.currentClass!.endTime.localeCompare(b.detail.currentClass!.endTime))[0];
-    return soonest ? { name: soonest.faculty.name, note: `free from ${soonest.detail.currentClass!.endTime}` } : null;
-  })();
+  const units = facultyList.flatMap((f) => f.subjects.flatMap((s) => s.modules));
+  const unitsDone = units.filter((m) => m.completed).length;
+  const syllabusPct = units.length ? Math.round((unitsDone / units.length) * 100) : 0;
 
-  const syllabus = (() => {
-    const modules = facultyList.flatMap((f) => f.subjects.flatMap((subject) => subject.modules));
-    const completed = modules.filter((m) => m.completed).length;
-    return { total: modules.length, completed, rate: modules.length ? (completed / modules.length) * 100 : 0 };
-  })();
+  // ---- This week ----
+  const held = sessions.filter((s) => s.status === 'completed' || s.status === 'substituted');
+  const cancelled = sessions.filter((s) => s.status === 'cancelled').length;
+  const substituted = sessions.filter((s) => s.status === 'substituted').length;
+  const present = held.reduce((n, s) => n + (s.studentsPresent ?? 0), 0);
+  const strength = held.reduce((n, s) => n + (s.strength ?? 0), 0);
+  const attendance = strength ? Math.round((present / strength) * 100) : null;
+  const rated = feedback.filter((f) => f.avgRating !== null);
+  const avgRating = rated.length ? rated.reduce((n, f) => n + (f.avgRating ?? 0), 0) / rated.length : null;
+  const approved = leaveRequests.filter((l) => l.status === 'Approved').length;
+  const rejected = leaveRequests.filter((l) => l.status === 'Rejected').length;
 
-  const approvedLeaves = leaveRequests.filter((leave) => leave.status === 'Approved').length;
-  const decidedLeaves = leaveRequests.filter((leave) => leave.status !== 'Pending').length;
-  const approvalRate = decidedLeaves ? (approvedLeaves / decidedLeaves) * 100 : 0;
+  const todayCards = [
+    {
+      icon: Users,
+      value: facultyList.length,
+      label: 'Faculty members',
+      hint: `${inClass.length} in class · ${free.length} free · ${onLeave.length} on leave`,
+      onClick: () => onNavigateTab('faculty', 'all'),
+    },
+    {
+      icon: CalendarClock,
+      value: classesToday.length,
+      label: 'Classes today',
+      hint: classesToday.length ? `${classesDone} finished so far` : `No classes on ${clock.dayName}`,
+      onClick: () => onNavigateTab('faculty'),
+    },
+    {
+      icon: ClipboardCheck,
+      value: pending.length,
+      label: 'Leave requests waiting',
+      hint: pending.length ? 'Needs your approval' : 'Nothing to review',
+      urgent: pending.length > 0,
+      onClick: () => onNavigateTab('leave'),
+    },
+    {
+      icon: BookOpen,
+      value: `${syllabusPct}%`,
+      label: 'Syllabus completed',
+      hint: `${unitsDone} of ${units.length} units taught`,
+      onClick: () => onNavigateTab('faculty'),
+    },
+  ];
+
+  const weekFacts = [
+    `${held.length} of ${sessions.length} classes were held${cancelled ? `, ${cancelled} cancelled` : ''}${substituted ? `, ${substituted} taken by a substitute` : ''}.`,
+    attendance !== null ? `Average student attendance was ${attendance}%.` : 'No attendance recorded yet.',
+    `Feedback received for ${rated.length} of ${feedback.length} courses${avgRating ? ` (average ${avgRating.toFixed(1)} out of 5)` : ''}.`,
+    `${approved} leave request${approved === 1 ? '' : 's'} approved, ${rejected} rejected, ${pending.length} waiting.`,
+  ];
+
+  const groups: { key: keyof typeof STATUS; list: typeof people }[] = [
+    { key: 'In Class', list: inClass },
+    { key: 'Free', list: free },
+    { key: 'On Leave', list: onLeave },
+  ];
 
   return (
-    <div className="space-y-4 pb-8 animate-in fade-in duration-200 sm:space-y-5">
-      <div className="flex flex-col justify-between gap-1.5 border-b border-[#e2ecf9] pb-2 sm:flex-row sm:items-center">
+    <div className="space-y-5 pb-8 animate-in fade-in duration-200">
+      {/* Header */}
+      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
         <div>
-          <h2 className="text-base font-extrabold tracking-tight text-[#10233f] sm:text-lg">{greeting}, {currentUser?.name.split(' ')[0] || 'Admin'}</h2>
-          <p className="mt-0.5 text-[11px] font-medium text-[#657894]">
-            Operations overview for <span className="font-semibold text-[#10233f]">{clock.dayName}</span>, Academic Session 2026–2027.
-          </p>
+          <h2 className="text-xl font-bold tracking-tight text-[#10233f]">{greeting}, Admin</h2>
+          <p className="mt-1 text-[13px] text-[#657894]">Everything happening at Arka Jain University today, on one page.</p>
         </div>
-        <span className="inline-flex items-center gap-2 self-start rounded-full border border-[#dce8f7] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#10233f] shadow-xs sm:self-auto">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" /> {clock.dayName} · {clock.dateStr}
+        <span className="self-start rounded-full border border-[#dce8f7] bg-white px-3 py-1 text-[12px] font-semibold text-[#10233f] sm:self-auto">
+          {clock.dayName}, {clock.dateStr}
         </span>
       </div>
 
-      <LiveStrip
-        items={[
-          {
-            label: 'In class now',
-            value: <>{teaching} of {facultyList.length} faculty</>,
-            sub: currentlyTeaching ? `${currentlyTeaching.faculty.name} · ${currentlyTeaching.detail.currentClass?.room} · until ${currentlyTeaching.detail.currentClass?.endTime}` : 'No class running right now',
-          },
-          {
-            label: 'Classes today',
-            value: classesToday,
-            sub: sessionsToday.length
-              ? `${sessionsToday.filter((x) => x.status === 'completed' || x.status === 'substituted').length} held · ${sessionsToday.filter((x) => x.status === 'cancelled').length} cancelled · ${substitutionsToday} substitution${substitutionsToday === 1 ? '' : 's'}`
-              : `${substitutionsToday} substitution${substitutionsToday === 1 ? '' : 's'} · ${pendingLeaves.length} pending approval${pendingLeaves.length === 1 ? '' : 's'}`,
-          },
-          {
-            label: 'Next free',
-            value: nextFree ? nextFree.name : '—',
-            sub: nextFree ? nextFree.note : 'Everyone is busy or on leave',
-          },
-        ]}
-      />
+      {/* 1. Today at a glance */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {todayCards.map(({ icon: Icon, value, label, hint, urgent, onClick }) => (
+          <button
+            key={label}
+            onClick={onClick}
+            className={`group rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${urgent ? 'border-amber-300 bg-amber-50' : 'border-[#dce8f7] bg-white'}`}
+          >
+            <div className="flex items-center justify-between">
+              <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${urgent ? 'bg-amber-100 text-amber-700' : 'bg-blue-50 text-blue-600'}`}>
+                <Icon className="h-[18px] w-[18px]" />
+              </span>
+              <ArrowRight className="h-4 w-4 text-[#94a3b8] transition group-hover:translate-x-0.5 group-hover:text-blue-600" />
+            </div>
+            <p className="mt-3 text-3xl font-bold tabular-nums text-[#10233f]">{value}</p>
+            <p className="mt-0.5 text-[14px] font-semibold text-[#10233f]">{label}</p>
+            <p className={`mt-1 text-[12px] ${urgent ? 'font-semibold text-amber-800' : 'text-[#657894]'}`}>{hint}</p>
+          </button>
+        ))}
+      </div>
 
-      <section>
-        <SectionLabel>Overview</SectionLabel>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5 lg:grid-cols-4">
-          <StatCard title="Total Faculty" value={facultyList.length} context={`Across ${departmentCount} departments`} pill={{ label: `${free} free now`, tone: 'up' }} onClick={() => onNavigateTab('faculty', 'all')} />
-          <StatCard title="Teaching Now" value={teaching} context={`${activePercent}% of faculty`} pill={{ label: 'Live now', tone: 'live' }} onClick={() => onNavigateTab('faculty', 'In Class')} />
-          <StatCard title="Syllabus Coverage" value={`${syllabus.rate.toFixed(1)}%`} context="Modules completed" pill={{ label: `${syllabus.completed}/${syllabus.total} done`, tone: 'up' }} />
-          <StatCard title="Pending Requests" value={pendingLeaves.length} context="Leave approvals" pill={pendingLeaves.length > 0 ? { label: 'Needs action', tone: 'down' } : { label: 'All clear', tone: 'up' }} onClick={() => onNavigateTab('leave')} />
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.3fr_1fr]">
+        {/* 2. What needs the admin */}
+        <Section
+          title="Needs your action"
+          hint="Leave requests from faculty. Approving also confirms their substitute teachers."
+          action={
+            <button onClick={() => onNavigateTab('leave')} className="shrink-0 text-[13px] font-semibold text-blue-600 hover:underline">
+              All requests
+            </button>
+          }
+        >
+          {pending.length === 0 ? (
+            <div className="flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-4 text-[14px] font-medium text-emerald-800">
+              <CheckCircle2 className="h-5 w-5 shrink-0" /> You're all caught up. No requests are waiting.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pending.map((leave) => (
+                <div key={leave.id} className="rounded-xl border border-[#e2ecf9] p-4">
+                  <p className="text-[14px] text-[#10233f]">
+                    <strong>{leave.facultyName}</strong> wants {leave.daysCount} day{leave.daysCount > 1 ? 's' : ''} of {leave.leaveType ? `${leave.leaveType.toLowerCase()} ` : ''}leave
+                  </p>
+                  <p className="mt-1 text-[13px] text-[#657894]">
+                    {leave.fromDate === leave.toDate ? leave.fromDate : `${leave.fromDate} to ${leave.toDate}`} · “{leave.reason}”
+                  </p>
+                  <p className="mt-1 text-[12px] text-[#657894]">
+                    {leave.substitutions.length
+                      ? `Classes covered by: ${Array.from(new Set(leave.substitutions.map((s) => s.substituteFacultyName))).join(', ')}`
+                      : 'No classes need covering'}
+                  </p>
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={() => updateLeaveRequestStatus(leave.id, 'Approved')} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-emerald-700">
+                      <Check className="h-4 w-4" /> Approve
+                    </button>
+                    <button onClick={() => updateLeaveRequestStatus(leave.id, 'Rejected')} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-[13px] font-semibold text-red-600 hover:bg-red-50">
+                      <XCircle className="h-4 w-4" /> Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        {/* Week summary in plain sentences instead of charts */}
+        <Section title="This week in short" hint="A quick summary of classes, attendance and feedback.">
+          <ul className="space-y-3">
+            {weekFacts.map((fact) => (
+              <li key={fact} className="flex gap-2.5 text-[14px] leading-snug text-[#10233f]">
+                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                {fact}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      </div>
+
+      {/* 3. Who is where */}
+      <Section title="Who's available right now" hint="Based on the timetable and approved leave. Click a name to see their full profile.">
+        <div className="space-y-4">
+          {groups.map(({ key, list }) => (
+            <div key={key} className="border-t border-[#eef3fb] pt-3 first:border-0 first:pt-0">
+              <p className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[#10233f]">
+                <span className={`h-2 w-2 rounded-full ${STATUS[key].dot}`} />
+                {STATUS[key].label} <span className="font-normal text-[#657894]">({list.length})</span>
+              </p>
+              {list.length === 0 ? (
+                <p className="rounded-lg bg-[#f7faff] px-3 py-2.5 text-[13px] text-[#94a3b8]">Nobody</p>
+              ) : (
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
+                  {list.map(({ faculty, detail }) => (
+                    <button
+                      key={faculty.id}
+                      onClick={() => onOpenFacultyDrawer(faculty.id)}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-[#f4f8ff]"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
+                        {faculty.avatarInitials}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[13px] font-semibold text-[#10233f]">{faculty.name}</span>
+                        <span className="block truncate text-[12px] text-[#657894]">
+                          {detail.currentClass
+                            ? `${detail.currentClass.subject} · ${detail.currentClass.room} · till ${detail.currentClass.endTime}`
+                            : key === 'On Leave'
+                            ? 'Away today'
+                            : faculty.designation ?? faculty.position}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-      </section>
+      </Section>
 
-      <RecentActivity onOpenLeave={() => onNavigateTab('leave')} onOpenFaculty={onOpenFacultyDrawer} />
-
-      <ModuleCard
-        icon={BookOpen}
-        title="Syllabus Progress"
-        description="Module completion across every subject and department"
-        stats={[
-          { label: 'Total Modules', value: syllabus.total, tone: 'yellow' },
-          { label: 'Pending', value: syllabus.total - syllabus.completed, tone: 'pink' },
-          { label: 'Completed', value: syllabus.completed, tone: 'blue' },
-        ]}
-        rate={syllabus.rate}
-        onViewMore={() => onNavigateTab('faculty')}
-      />
-
-      <ModuleCard
-        icon={CalendarCheck}
-        title="Leave & Substitution"
-        description="Requests, approvals and class cover arranged by faculty"
-        stats={[
-          { label: 'Total Requests', value: leaveRequests.length, tone: 'yellow' },
-          { label: 'Pending', value: pendingLeaves.length, tone: 'pink' },
-          { label: 'Approved', value: approvedLeaves, tone: 'blue' },
-        ]}
-        rateLabel="Approval Rate"
-        rate={approvalRate}
-        onViewMore={() => onNavigateTab('leave')}
-      />
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr]">
-        <WeeklyClassesChart />
-        <CampusPresenceCard />
+      {/* Charts, tables and export stay available, just out of the way */}
+      <div>
+        <button
+          onClick={() => setShowReports((v) => !v)}
+          aria-expanded={showReports}
+          className="flex w-full items-center justify-between rounded-2xl border border-[#dce8f7] bg-white px-5 py-4 text-left hover:bg-[#f9fcff]"
+        >
+          <span>
+            <span className="block text-[15px] font-bold text-[#10233f]">Detailed reports</span>
+            <span className="block text-[13px] text-[#657894]">Class charts, teaching load, campus check-ins, course feedback and the full activity log with export.</span>
+          </span>
+          <ChevronDown className={`h-5 w-5 shrink-0 text-[#657894] transition ${showReports ? 'rotate-180' : ''}`} />
+        </button>
+        {showReports && (
+          <div className="mt-4 space-y-4">
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr]">
+              <WeeklyClassesChart />
+              <CampusPresenceCard />
+            </div>
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1.4fr]">
+              <TeachingLoadChart onOpenFaculty={onOpenFacultyDrawer} />
+              <CourseFeedbackCard />
+            </div>
+            <RecentActivity onOpenLeave={() => onNavigateTab('leave')} onOpenFaculty={onOpenFacultyDrawer} />
+          </div>
+        )}
       </div>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1.4fr]">
-        <TeachingLoadChart onOpenFaculty={onOpenFacultyDrawer} />
-        <CourseFeedbackCard />
-      </div>
-
-      <section className="rounded-2xl border border-[#dce8f7] bg-white p-4.5 shadow-[0_10px_30px_rgba(31,76,126,0.06)] sm:p-5">
-        <div className="mb-3.5 flex items-center justify-between gap-3 border-b border-[#eaf2fc] pb-2.5"><div><div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-amber-500" /><h3 className="text-[13px] font-bold text-[#10233f]">Needs your attention</h3><span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">{pendingLeaves.length} open</span></div><p className="mt-0.5 text-[11px] text-[#657894]">Approve leave requests and keep substitutions moving.</p></div><button onClick={() => onNavigateTab('leave')} className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800">See all <ArrowRight className="h-3 w-3" /></button></div>
-        {pendingLeaves.length === 0 ? <div className="rounded-xl border border-dashed border-[#bfdbfe] bg-[#f8fbff] py-5 text-center text-[11px] text-[#657894]">No pending requests. Your queue is clear.</div> : <div className="space-y-2.5">{pendingLeaves.slice(0, 3).map((leave) => <div key={leave.id} className="flex flex-col gap-3 rounded-xl border border-[#e2ecf9] bg-[#f9fcff] p-3 transition hover:border-[#bfdbfe] md:flex-row md:items-center md:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-bold text-[#10233f]">{leave.facultyName}</span><span className="text-[11px] text-[#657894]">{leave.department}</span><span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">{leave.daysCount} days</span></div><p className="mt-1 truncate text-xs text-[#657894]">{leave.reason}</p><p className="mt-1 font-mono text-[10px] text-[#94a3b8]">{leave.fromDate} → {leave.toDate} · {leave.substitutions.length} substitutions mapped</p></div><div className="flex shrink-0 items-center gap-2"><button onClick={() => updateLeaveRequestStatus(leave.id, 'Approved')} className="inline-flex items-center gap-1.5 cursor-pointer rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs transition hover:bg-emerald-700"><Check className="h-3 w-3" /> Approve</button><button onClick={() => updateLeaveRequestStatus(leave.id, 'Rejected')} className="inline-flex items-center gap-1.5 cursor-pointer rounded-lg border border-red-200 bg-white px-3 py-1.5 text-[11px] font-bold text-red-600 transition hover:bg-red-50"><XCircle className="h-3 w-3" /> Reject</button></div></div>)}</div>}
-      </section>
-
-      <section className="rounded-2xl border border-[#dce8f7] bg-white p-4.5 shadow-[0_10px_30px_rgba(31,76,126,0.06)] sm:p-5">
-        <div className="mb-3.5 flex items-center justify-between border-b border-[#eaf2fc] pb-2.5"><div><h3 className="text-[13px] font-bold text-[#10233f]">Faculty at a glance</h3><p className="mt-0.5 text-[11px] text-[#657894]">Live availability based on timetable and approved leave.</p></div><MoreHorizontal className="h-5 w-5 text-[#94a3b8]" /></div>
-        <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">{facultyStatuses.map(({ faculty, detail }) => { const tone = detail.status === 'In Class' ? statusTone.teaching : detail.status === 'On Leave' ? statusTone.leave : statusTone.free; return <button key={faculty.id} onClick={() => onOpenFacultyDrawer(faculty.id)} className="group flex items-center gap-3 cursor-pointer rounded-xl border border-[#e2ecf9] bg-[#f9fcff] p-3 text-left transition hover:-translate-y-0.5 hover:border-[#bfdbfe] hover:bg-white hover:shadow-sm"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-xs font-bold text-white shadow-xs">{faculty.avatarInitials}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-bold text-[#10233f]">{faculty.name}</p><p className="mt-0.5 truncate text-[10px] text-[#657894]">{faculty.department} · {faculty.currentSection}</p></div><span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold ${tone.bg} ${tone.text}`}><span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />{tone.label}</span></button>; })}</div>
-      </section>
     </div>
   );
 };
