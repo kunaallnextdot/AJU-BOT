@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { ADMIN_USER } from '../../data/mockData';
 import { LeaveType, FacultyMember, SubstitutionSlot } from '../../types';
 import {
   CalendarCheck,
@@ -388,8 +389,8 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
 
                           {/* Status Chip Requirement 1: On Leave / Pending / Rejected */}
                           {isApproved && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100/80 text-amber-900 border border-amber-300">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                               {clock.dateStr >= req.fromDate && clock.dateStr <= req.toDate ? 'On Leave' : 'Approved'}
                             </span>
                           )}
@@ -685,7 +686,7 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
               <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/50 text-xs text-amber-900 flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <strong>Extended Leave ({daysCount} days):</strong> Substitution scheduling is managed centrally by Academic Administration. Request will be forwarded directly to Dean Shivani Singh.
+                  <strong>Extended Leave ({daysCount} days):</strong> Substitution scheduling is managed centrally by Academic Administration. Request will be forwarded directly to {ADMIN_USER.name} ({ADMIN_USER.position}).
                 </div>
               </div>
             )}
@@ -764,7 +765,7 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
                       </td>
                       <td className="py-2.5 px-3">
                         {req.status === 'Approved' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100/80 text-amber-900 border border-amber-300">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             {clock.dateStr >= req.fromDate && clock.dateStr <= req.toDate ? 'On Leave' : 'Approved'}
                           </span>
                         )}

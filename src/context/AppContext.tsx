@@ -215,8 +215,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         faculty: new Map(faculty.map((x) => [x.id, JSON.stringify(x)])),
         leave: new Map(leave.map((x) => [x.id, JSON.stringify(x)])),
       };
-      setFacultyList(faculty);
-      setLeaveRequests(leave);
+      // Rows created in this browser while it was offline (timestamp ids) are kept and,
+      // being absent from `synced`, get uploaded by the save effects below.
+      const createdOffline = <T extends { id: string }>(local: T[], remote: T[]) =>
+        local.filter((x) => /-\d{13}$/.test(x.id) && !remote.some((r) => r.id === x.id));
+      setFacultyList((local) => [...faculty, ...createdOffline(local, faculty)]);
+      setLeaveRequests((local) => [...createdOffline(local, leave), ...leave]);
       setRemoteReady(true);
       setDataSource('supabase');
     })();

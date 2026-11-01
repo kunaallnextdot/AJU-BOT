@@ -141,7 +141,7 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
         )}
         {/* Data source: live Supabase vs bundled offline snapshot */}
         <span
-          className="hidden items-center gap-1.5 rounded-lg border border-[#e7e7e4] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#404040] lg:inline-flex"
+          className="hidden items-center gap-1.5 rounded-lg border border-[#dce8f7] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#10233f] md:inline-flex"
           title={dataSource === 'supabase' ? 'Faculty and leave data are live from Supabase' : dataSource === 'loading' ? 'Connecting to Supabase…' : 'Showing the bundled offline copy of the database'}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${dataSource === 'supabase' ? 'bg-[#1f9d55]' : dataSource === 'loading' ? 'animate-pulse bg-[#d08a1e]' : 'bg-[#a3a3a3]'}`} />

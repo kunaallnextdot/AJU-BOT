@@ -45,7 +45,7 @@ export const Login: React.FC<LoginProps> = ({ onReplaySplash }) => {
 
     if (trimmedPassword !== INSTITUTION_GATE_PASSWORD) {
       setTimeout(() => {
-        setErrorMsg('That access password is not valid. Please contact the Dean of IT for credentials.');
+        setErrorMsg('That access password is not valid. Please contact the AJU administrator for credentials.');
         setIsSubmitting(false);
       }, 250);
       return;
