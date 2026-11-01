@@ -133,17 +133,13 @@ const MainAppContent: React.FC = () => {
         />
 
         {/* Main workspace body */}
-<<<<<<< HEAD
-        <main className="p-4 sm:p-5 lg:p-7 max-w-[1440px] w-full mx-auto flex-1">
+        <main className="p-3 sm:p-4 lg:p-5 max-w-6xl w-full mx-auto flex-1">
           {syncError && (
             <div role="alert" className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-[#f3c7c5] bg-[#fdecec] px-4 py-3 text-xs font-medium text-[#9b2c28]">
               <span>{syncError}</span>
               <button onClick={clearSyncError} className="shrink-0 font-bold hover:underline">Dismiss</button>
             </div>
           )}
-=======
-        <main className="p-3 sm:p-4 lg:p-5 max-w-6xl w-full mx-auto flex-1">
->>>>>>> 6bae4c969c2b86bdffa15cf9489199c3b32ba1ee
           {isAdmin ? (
             /* Admin Workspace Views */
             <>

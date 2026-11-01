@@ -1,5 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { supabase, FacultyRow, LeaveRow, facultyToRow, rowToFaculty, leaveToRow, rowToLeave } from '../lib/supabase';
+import {
+  supabase,
+  FacultyRow,
+  LeaveRow,
+  facultyToRow,
+  rowToFaculty,
+  leaveToRow,
+  rowToLeave,
+  subscribeToChanges,
+} from '../lib/supabase';
 import {
   CurrentUser,
   FacultyMember,
@@ -23,15 +32,6 @@ import {
   CLASS_SESSIONS,
   COURSE_FEEDBACK,
 } from '../data/mockData';
-import {
-  supabase,
-  fetchFaculty,
-  fetchLeaveRequests,
-  insertLeaveRequest,
-  updateLeaveRequest,
-  updateFacultySubjects,
-  subscribeToChanges,
-} from '../lib/supabase';
 
 interface SimulatedClock {
   isSimulated: boolean;
@@ -148,43 +148,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [holidays] = useState<AcademicHoliday[]>(ACADEMIC_HOLIDAYS);
 
-  // ---- Supabase: live faculty + leave data (falls back to the bundled snapshot) ----
-  const [dataSource, setDataSource] = useState<'loading' | 'supabase' | 'local'>(supabase ? 'loading' : 'local');
-  const [syncError, setSyncError] = useState<string | null>(null);
-
-  // Local state changes first (instant UI), then the write; a failed write is surfaced, not hidden
-  const persist = (write: () => Promise<void>) => {
-    if (!supabase || dataSource !== 'supabase') return;
-    write().catch((err: Error) => setSyncError(`Couldn't save to Supabase: ${err.message}`));
-  };
-
-  useEffect(() => {
-    if (!supabase) return;
-    let cancelled = false;
-    const load = async (tables: ('faculty' | 'leave_requests')[] = ['faculty', 'leave_requests']) => {
-      try {
-        const [faculty, leaves] = await Promise.all([
-          tables.includes('faculty') ? fetchFaculty() : null,
-          tables.includes('leave_requests') ? fetchLeaveRequests() : null,
-        ]);
-        if (cancelled) return;
-        if (faculty?.length) setFacultyList(faculty);
-        if (leaves) setLeaveRequests(leaves);
-        setDataSource('supabase');
-      } catch (err) {
-        if (cancelled) return;
-        setDataSource((prev) => (prev === 'supabase' ? prev : 'local'));
-        setSyncError(`Couldn't load from Supabase, showing offline data: ${(err as Error).message}`);
-      }
-    };
-    load();
-    const unsubscribe = subscribeToChanges((table) => load([table]));
-    return () => {
-      cancelled = true;
-      unsubscribe();
-    };
-  }, []);
-
   // Current logged in user
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() => {
     try {
@@ -215,25 +178,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // On mount, replace the local copy with the database rows. After that, every
   // faculty or leave row whose content changed is upserted back. `synced` holds
   // the last saved JSON per row id, so unchanged rows are never re-sent.
+  // Realtime events from other users reload the table and refresh `synced`, so
+  // incoming rows are not echoed back as writes.
   const [remoteReady, setRemoteReady] = useState(false);
+  const [dataSource, setDataSource] = useState<'loading' | 'supabase' | 'local'>(supabase ? 'loading' : 'local');
+  const [syncError, setSyncError] = useState<string | null>(null);
   const synced = useRef<{ faculty: Map<string, string>; leave: Map<string, string> } | null>(null);
 
   useEffect(() => {
     const db = supabase;
     if (!db) return;
     let cancelled = false;
+
+    const fetchFaculty = () =>
+      db.from('faculty').select('*').order('employee_code', { nullsFirst: false }).order('created_at');
+    const fetchLeave = () => db.from('leave_requests').select('*').order('created_at', { ascending: false });
+
     (async () => {
-      const [f, l] = await Promise.all([
-        db.from('faculty').select('*').order('employee_code', { nullsFirst: false }).order('created_at'),
-        db.from('leave_requests').select('*').order('created_at', { ascending: false }),
-      ]);
+      const [f, l] = await Promise.all([fetchFaculty(), fetchLeave()]);
       if (cancelled) return;
       if (f.error || l.error) {
-        console.error('Supabase load failed, using local data:', (f.error ?? l.error)?.message);
+        const message = (f.error ?? l.error)?.message;
+        console.error('Supabase load failed, using local data:', message);
+        setSyncError(`Couldn't load from Supabase, showing offline data: ${message}`);
+        setDataSource('local');
         return;
       }
       if (f.data.length === 0) {
         console.warn('Supabase faculty table is empty, using local data. Run `npm run db:seed`.');
+        setDataSource('local');
         return;
       }
       const faculty = (f.data as FacultyRow[]).map(rowToFaculty);
@@ -245,9 +218,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setFacultyList(faculty);
       setLeaveRequests(leave);
       setRemoteReady(true);
+      setDataSource('supabase');
     })();
+
+    const unsubscribe = subscribeToChanges(async (table) => {
+      if (!synced.current) return;
+      if (table === 'faculty') {
+        const { data, error } = await fetchFaculty();
+        if (cancelled || error || !data?.length) return;
+        const faculty = (data as FacultyRow[]).map(rowToFaculty);
+        faculty.forEach((x) => synced.current?.faculty.set(x.id, JSON.stringify(x)));
+        setFacultyList(faculty);
+      } else {
+        const { data, error } = await fetchLeave();
+        if (cancelled || error || !data) return;
+        const leave = (data as LeaveRow[]).map(rowToLeave);
+        leave.forEach((x) => synced.current?.leave.set(x.id, JSON.stringify(x)));
+        setLeaveRequests(leave);
+      }
+    });
+
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, []);
 
@@ -263,6 +256,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .then(({ error }) => {
         if (!error) return;
         console.error('Supabase faculty save failed:', error.message);
+        setSyncError(`Couldn't save faculty changes to Supabase: ${error.message}`);
         changed.forEach((x) => saved.delete(x.id)); // retry on the next change
       });
   }, [facultyList, remoteReady]);
@@ -279,6 +273,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .then(({ error }) => {
         if (!error) return;
         console.error('Supabase leave save failed:', error.message);
+        setSyncError(`Couldn't save leave changes to Supabase: ${error.message}`);
         changed.forEach((x) => saved.delete(x.id));
       });
   }, [leaveRequests, remoteReady]);
@@ -449,13 +444,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  // Apply a change to one faculty's subjects locally, then persist it
+  // Apply a change to one faculty's subjects (the Supabase sync effect saves it)
   const updateSubjects = (facultyId: string, change: (subjects: FacultyMember['subjects']) => FacultyMember['subjects']) => {
     const target = facultyList.find((f) => f.id === facultyId);
     if (!target) return;
     const subjects = change(target.subjects);
     setFacultyList((prev) => prev.map((f) => (f.id === facultyId ? { ...f, subjects } : f)));
-    persist(() => updateFacultySubjects(facultyId, subjects));
   };
 
   // Toggle module completion (Faculty Dashboard only)
@@ -523,7 +517,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: `${clock.dateStr} ${clock.timeStr}`,
     };
     setLeaveRequests((prev) => [newRequest, ...prev]);
-    persist(() => insertLeaveRequest(newRequest));
   };
 
   // Register a newly joined faculty member (no timetable or subjects yet)
@@ -560,7 +553,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!target) return;
     const updated: LeaveRequest = { ...target, status, reviewedAt, substitutions: target.substitutions.map((sub) => ({ ...sub, status })) };
     setLeaveRequests((prev) => prev.map((r) => (r.id === requestId ? updated : r)));
-    persist(() => updateLeaveRequest(updated));
   };
 
   const loginUser = (user: CurrentUser) => {
