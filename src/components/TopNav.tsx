@@ -28,7 +28,7 @@ const FACULTY_PAGES = [
 ];
 
 export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenLeaveRequests, onNavigate }) => {
-  const { currentUser, currentTheme, clock, leaveRequests, updateLeaveRequestStatus, facultyList } = useApp();
+  const { currentUser, currentTheme, clock, leaveRequests, updateLeaveRequestStatus, facultyList, dataSource } = useApp();
   const [query, setQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [showProfilePopover, setShowProfilePopover] = useState(false);
@@ -139,6 +139,15 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
             </div>}
           </div>
         )}
+        {/* Data source: live Supabase vs bundled offline snapshot */}
+        <span
+          className="hidden items-center gap-1.5 rounded-lg border border-[#e7e7e4] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#404040] lg:inline-flex"
+          title={dataSource === 'supabase' ? 'Faculty and leave data are live from Supabase' : dataSource === 'loading' ? 'Connecting to Supabase…' : 'Showing the bundled offline copy of the database'}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${dataSource === 'supabase' ? 'bg-[#1f9d55]' : dataSource === 'loading' ? 'animate-pulse bg-[#d08a1e]' : 'bg-[#a3a3a3]'}`} />
+          {dataSource === 'supabase' ? 'Live data' : dataSource === 'loading' ? 'Connecting…' : 'Offline data'}
+        </span>
+
         {/* Live Academic Clock Badge */}
         <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#dce8f7] bg-[#f8fbff] text-[11px] font-semibold text-[#10233f] shadow-xs select-none">
           <Clock

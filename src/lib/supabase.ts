@@ -117,3 +117,19 @@ export const rowToLeave = (r: LeaveRow): LeaveRequest => ({
   createdAt: r.created_at,
   reviewedAt: r.reviewed_at,
 });
+
+// ---------- realtime ----------
+
+/** Live updates from other users. Needs Realtime enabled on the tables; silently idle otherwise. */
+export const subscribeToChanges = (onChange: (table: 'faculty' | 'leave_requests') => void) => {
+  const db = supabase;
+  if (!db) return () => undefined;
+  const channel = db
+    .channel('aju-bot-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'faculty' }, () => onChange('faculty'))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => onChange('leave_requests'))
+    .subscribe();
+  return () => {
+    db.removeChannel(channel);
+  };
+};

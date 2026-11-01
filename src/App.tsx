@@ -23,7 +23,7 @@ import { FacultyLeave } from './components/faculty/FacultyLeave';
 import { FacultyMember } from './types';
 
 const MainAppContent: React.FC = () => {
-  const { currentUser, facultyList } = useApp();
+  const { currentUser, facultyList, syncError, clearSyncError } = useApp();
   const [showSplash, setShowSplash] = useState(true);
   const [adminTab, setAdminTab] = useState<AdminViewTab>('dashboard');
   const [facultyTab, setFacultyTab] = useState<FacultyViewTab>('my-day');
@@ -134,6 +134,12 @@ const MainAppContent: React.FC = () => {
 
         {/* Main workspace body */}
         <main className="p-3 sm:p-4 lg:p-5 max-w-6xl w-full mx-auto flex-1">
+          {syncError && (
+            <div role="alert" className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-[#f3c7c5] bg-[#fdecec] px-4 py-3 text-xs font-medium text-[#9b2c28]">
+              <span>{syncError}</span>
+              <button onClick={clearSyncError} className="shrink-0 font-bold hover:underline">Dismiss</button>
+            </div>
+          )}
           {isAdmin ? (
             /* Admin Workspace Views */
             <>
