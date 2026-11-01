@@ -310,7 +310,7 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
               </p>
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto">
+            <div className="flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-x-auto">
               {[
                 { id: 'all', label: 'All Requests' },
                 { id: 'Approved', label: 'Approved' },
