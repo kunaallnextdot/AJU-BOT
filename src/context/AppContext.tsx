@@ -396,7 +396,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const activeClass = dayClasses.find((c) => {
       const startMins = timeToMinutes(c.startTime);
       const endMins = timeToMinutes(c.endTime);
-      return currentMins >= startMins && currentMins <= endMins;
+      return currentMins >= startMins && currentMins < endMins;
     });
 
     if (activeClass) {
