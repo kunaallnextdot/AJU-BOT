@@ -22,6 +22,15 @@ import {
   CLASS_SESSIONS,
   COURSE_FEEDBACK,
 } from '../data/mockData';
+import {
+  supabase,
+  fetchFaculty,
+  fetchLeaveRequests,
+  insertLeaveRequest,
+  updateLeaveRequest,
+  updateFacultySubjects,
+  subscribeToChanges,
+} from '../lib/supabase';
 
 interface SimulatedClock {
   isSimulated: boolean;
@@ -72,6 +81,10 @@ interface AppContextType {
   ) => void;
   logout: () => void;
   loginUser: (user: CurrentUser) => void;
+  /** 'supabase' once live data has loaded, 'local' when running on the bundled DB snapshot */
+  dataSource: 'loading' | 'supabase' | 'local';
+  syncError: string | null;
+  clearSyncError: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -130,6 +143,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [holidays] = useState<AcademicHoliday[]>(ACADEMIC_HOLIDAYS);
+
+  // ---- Supabase: live faculty + leave data (falls back to the bundled snapshot) ----
+  const [dataSource, setDataSource] = useState<'loading' | 'supabase' | 'local'>(supabase ? 'loading' : 'local');
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  // Local state changes first (instant UI), then the write; a failed write is surfaced, not hidden
+  const persist = (write: () => Promise<void>) => {
+    if (!supabase || dataSource !== 'supabase') return;
+    write().catch((err: Error) => setSyncError(`Couldn't save to Supabase: ${err.message}`));
+  };
+
+  useEffect(() => {
+    if (!supabase) return;
+    let cancelled = false;
+    const load = async (tables: ('faculty' | 'leave_requests')[] = ['faculty', 'leave_requests']) => {
+      try {
+        const [faculty, leaves] = await Promise.all([
+          tables.includes('faculty') ? fetchFaculty() : null,
+          tables.includes('leave_requests') ? fetchLeaveRequests() : null,
+        ]);
+        if (cancelled) return;
+        if (faculty?.length) setFacultyList(faculty);
+        if (leaves) setLeaveRequests(leaves);
+        setDataSource('supabase');
+      } catch (err) {
+        if (cancelled) return;
+        setDataSource((prev) => (prev === 'supabase' ? prev : 'local'));
+        setSyncError(`Couldn't load from Supabase, showing offline data: ${(err as Error).message}`);
+      }
+    };
+    load();
+    const unsubscribe = subscribeToChanges((table) => load([table]));
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
 
   // Current logged in user
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() => {
@@ -323,32 +373,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  // Apply a change to one faculty's subjects locally, then persist it
+  const updateSubjects = (facultyId: string, change: (subjects: FacultyMember['subjects']) => FacultyMember['subjects']) => {
+    const target = facultyList.find((f) => f.id === facultyId);
+    if (!target) return;
+    const subjects = change(target.subjects);
+    setFacultyList((prev) => prev.map((f) => (f.id === facultyId ? { ...f, subjects } : f)));
+    persist(() => updateFacultySubjects(facultyId, subjects));
+  };
+
   // Toggle module completion (Faculty Dashboard only)
   const toggleModuleCompletion = (
     facultyId: string,
     subjectId: string,
     moduleId: string
   ) => {
-    setFacultyList((prev) =>
-      prev.map((faculty) => {
-        if (faculty.id !== facultyId) return faculty;
+    updateSubjects(facultyId, (subjects) =>
+      subjects.map((sub) => {
+        if (sub.id !== subjectId) return sub;
         return {
-          ...faculty,
-          subjects: faculty.subjects.map((sub) => {
-            if (sub.id !== subjectId) return sub;
+          ...sub,
+          modules: sub.modules.map((mod) => {
+            if (mod.id !== moduleId) return mod;
+            const completed = !mod.completed;
             return {
-              ...sub,
-              modules: sub.modules.map((mod) => {
-                if (mod.id !== moduleId) return mod;
-                const completed = !mod.completed;
-                return {
-                  ...mod,
-                  completed,
-                  status: completed ? 'completed' : 'not_started',
-                  completionPct: completed ? 100 : 0,
-                  updatedOn: clock.dateStr,
-                };
-              }),
+              ...mod,
+              completed,
+              status: completed ? 'completed' : 'not_started',
+              completionPct: completed ? 100 : 0,
+              updatedOn: clock.dateStr,
             };
           }),
         };
@@ -363,27 +416,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     moduleName: string
   ) => {
     if (!moduleName.trim()) return;
-    setFacultyList((prev) =>
-      prev.map((faculty) => {
-        if (faculty.id !== facultyId) return faculty;
+    updateSubjects(facultyId, (subjects) =>
+      subjects.map((sub) => {
+        if (sub.id !== subjectId) return sub;
+        // HARD CAP OF 5: No more than 5 modules can ever be added
+        if (sub.modules.length >= 5) return sub;
+        const newMod = {
+          id: `m_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          name: moduleName.trim(),
+          completed: false,
+          status: 'not_started' as const,
+          completionPct: 0,
+        };
         return {
-          ...faculty,
-          subjects: faculty.subjects.map((sub) => {
-            if (sub.id !== subjectId) return sub;
-            // HARD CAP OF 5: No more than 5 modules can ever be added
-            if (sub.modules.length >= 5) return sub;
-            const newMod = {
-              id: `m_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-              name: moduleName.trim(),
-              completed: false,
-              status: 'not_started' as const,
-              completionPct: 0,
-            };
-            return {
-              ...sub,
-              modules: [...sub.modules, newMod],
-            };
-          }),
+          ...sub,
+          modules: [...sub.modules, newMod],
         };
       })
     );
@@ -397,9 +444,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...req,
       id: `leave-${Date.now()}`,
       status: 'Pending',
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      createdAt: `${clock.dateStr} ${clock.timeStr}`,
     };
     setLeaveRequests((prev) => [newRequest, ...prev]);
+    persist(() => insertLeaveRequest(newRequest));
   };
 
   // Approve / Reject leave
@@ -409,13 +457,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ) => {
     // Leave and its substitution requests are reviewed together
     const reviewedAt = `${clock.dateStr} ${clock.timeStr}`;
-    setLeaveRequests((prev) =>
-      prev.map((r) =>
-        r.id === requestId
-          ? { ...r, status, reviewedAt, substitutions: r.substitutions.map((sub) => ({ ...sub, status })) }
-          : r
-      )
-    );
+    const target = leaveRequests.find((r) => r.id === requestId);
+    if (!target) return;
+    const updated: LeaveRequest = { ...target, status, reviewedAt, substitutions: target.substitutions.map((sub) => ({ ...sub, status })) };
+    setLeaveRequests((prev) => prev.map((r) => (r.id === requestId ? updated : r)));
+    persist(() => updateLeaveRequest(updated));
   };
 
   const loginUser = (user: CurrentUser) => {
@@ -451,6 +497,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateLeaveRequestStatus,
         logout,
         loginUser,
+        dataSource,
+        syncError,
+        clearSyncError: () => setSyncError(null),
       }}
     >
       {children}
