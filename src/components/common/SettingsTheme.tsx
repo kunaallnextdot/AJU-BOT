@@ -1,37 +1,61 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { Check, LockKeyhole, Monitor, ShieldCheck, UserRound } from 'lucide-react';
+import { Check, LockKeyhole, Palette, ShieldCheck, UserRound } from 'lucide-react';
+import { THEME_PALETTES } from '../../data/mockData';
 
 export const SettingsTheme: React.FC = () => {
-  const { currentUser } = useApp();
+  const { currentUser, currentTheme, setTheme } = useApp();
 
   return (
     <div className="max-w-4xl space-y-4 animate-in fade-in duration-200 sm:space-y-5">
       <section className="rounded-2xl border border-[#dce8f7] bg-white p-4.5 shadow-[0_10px_30px_rgba(31,76,126,0.06)] sm:p-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eff6ff] text-[#2563eb]">
-            <Monitor className="h-5 w-5" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-light)] text-[var(--accent)]">
+            <Palette className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Workspace settings</p>
-            <h2 className="mt-1 text-base font-extrabold tracking-tight text-[#10233f] sm:text-lg">A calm, consistent workspace</h2>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Appearance</p>
+            <h2 className="mt-1 text-base font-extrabold tracking-tight text-[#10233f] sm:text-lg">Workspace theme</h2>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-[#657894]">
-              AJU BOT uses a standardized light interface so schedules, people, and approvals stay easy to scan across every role and device.
+              Pick a colour theme. Buttons, highlights, charts and progress bars across your whole workspace change right away.
+              It is saved for <strong className="text-[#10233f]">{currentUser?.name}</strong> on this device.
             </p>
           </div>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-4 rounded-xl border border-[#bfdbfe] bg-[#f0f6ff] px-4 py-3">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-[#2563eb] shadow-sm">
-              <Check className="h-4 w-4" />
-            </span>
-            <div>
-              <p className="text-sm font-bold text-[#10233f]">Light mode</p>
-              <p className="text-xs text-[#657894]">Standardized for clarity and accessibility</p>
-            </div>
-          </div>
-          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Active</span>
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" role="radiogroup" aria-label="Workspace theme">
+          {THEME_PALETTES.map((theme) => {
+            const active = theme.id === currentTheme.id;
+            return (
+              <button
+                key={theme.id}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setTheme(theme.id)}
+                className={`card-lift flex min-w-0 flex-col rounded-xl border-2 bg-white p-4 text-left transition-colors ${active ? 'shadow-md' : 'border-[#e2ecf9] hover:border-[#cbd5e1]'}`}
+                style={active ? { borderColor: theme.primaryHex, boxShadow: `0 8px 24px ${theme.glowHex}` } : undefined}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="h-4 w-4 shrink-0 rounded-full" style={{ background: theme.primaryHex }} />
+                    <span className="truncate text-[13px] font-bold text-[#10233f]">{theme.name}</span>
+                  </span>
+                  {active && (
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white" style={{ background: theme.primaryHex }}>
+                      <Check className="h-3 w-3" />
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1.5 min-h-8 text-[11px] leading-4 text-[#657894]">{theme.description}</p>
+                <div className="mt-3 flex gap-1.5 border-t border-[#f0f5fc] pt-3">
+                  {[theme.primaryHex, theme.deepHex, theme.lightHex].map((c) => (
+                    <span key={c} className="h-3 flex-1 rounded-md border border-black/5" style={{ background: c }} />
+                  ))}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
 

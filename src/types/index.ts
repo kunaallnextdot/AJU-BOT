@@ -88,6 +88,9 @@ export interface AdminUser {
   position: string;
   email: string;
   avatarInitials: string;
+  /** dept_short codes this admin reviews leave for; null/undefined = every department */
+  departments?: string[] | null;
+  isActive?: boolean;
 }
 
 export type CurrentUser = AdminUser | FacultyMember;
@@ -125,6 +128,10 @@ export interface LeaveRequest {
   status: 'Pending' | 'Approved' | 'Rejected';
   createdAt: string;
   reviewedAt?: string | null;
+  /** Admin the request is routed to (assigned by the database on insert) */
+  approverId?: string | null;
+  /** Admin who approved or rejected it */
+  reviewedBy?: string | null;
 }
 
 export type HolidayType = 'festival' | 'restricted' | 'observance' | 'saturday';

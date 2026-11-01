@@ -95,7 +95,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ icon: Icon, title, descr
   return (
     <section className="rounded-2xl border border-[#dce8f7] bg-white p-4.5 shadow-[0_10px_30px_rgba(31,76,126,0.06)] sm:p-5">
       <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 ${open ? 'mb-3.5 border-b border-[#eaf2fc] pb-2.5' : ''}`}>
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white shadow-xs">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent-deep)] text-white shadow-xs">
           <Icon className="h-3.5 w-3.5" />
         </span>
         <div className="min-w-0 flex-1">
@@ -137,7 +137,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ icon: Icon, title, descr
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-[#eaf2fc]">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] transition-all duration-700"
+                  className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-deep)] transition-all duration-700"
                   style={{ width: `${Math.min(100, Math.max(0, rate))}%` }}
                 />
               </div>

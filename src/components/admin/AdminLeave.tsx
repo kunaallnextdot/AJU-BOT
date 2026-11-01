@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useLeaveReview } from '../../lib/useLeaveReview';
 import {
   CalendarCheck,
   CheckCircle2,
@@ -13,7 +14,8 @@ import {
 } from 'lucide-react';
 
 export const AdminLeave: React.FC = () => {
-  const { leaveRequests, updateLeaveRequestStatus, currentTheme, clock, sessions } = useApp();
+  const { leaveRequests, currentTheme, clock, sessions } = useApp();
+  const { review, busyId } = useLeaveReview();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
 
@@ -101,7 +103,7 @@ export const AdminLeave: React.FC = () => {
                     <span className="text-sm font-bold text-[#10233f]">
                       {req.facultyName}
                     </span>
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[#eff6ff] text-blue-700">
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[var(--accent-light)] text-blue-700">
                       {req.department}
                     </span>
                     <span className="text-[11px] font-bold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md">
@@ -187,15 +189,17 @@ export const AdminLeave: React.FC = () => {
                   {isPending ? (
                     <>
                       <button
-                        onClick={() => updateLeaveRequestStatus(req.id, 'Approved')}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
+                        onClick={() => review(req.id, 'Approved')}
+                        disabled={busyId === req.id}
+                        className="disabled:opacity-60 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Approve Leave</span>
                       </button>
                       <button
-                        onClick={() => updateLeaveRequestStatus(req.id, 'Rejected')}
-                        className="px-3 py-1.5 rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                        onClick={() => review(req.id, 'Rejected')}
+                        disabled={busyId === req.id}
+                        className="disabled:opacity-60 px-3 py-1.5 rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
                       >
                         <XCircle className="w-3.5 h-3.5" />
                         <span>Reject</span>
@@ -204,12 +208,8 @@ export const AdminLeave: React.FC = () => {
                   ) : (
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() =>
-                          updateLeaveRequestStatus(
-                            req.id,
-                            isApproved ? 'Rejected' : 'Approved'
-                          )
-                        }
+                        onClick={() => review(req.id, isApproved ? 'Rejected' : 'Approved')}
+                        disabled={busyId === req.id}
                         className="text-[11px] text-[#657894] hover:text-[#10233f] underline cursor-pointer"
                       >
                         Change to {isApproved ? 'Rejected' : 'Approved'}

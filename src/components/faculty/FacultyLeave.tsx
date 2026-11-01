@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { ADMIN_USER } from '../../data/mockData';
-import { LeaveType, FacultyMember, SubstitutionSlot } from '../../types';
+import { leaveDays, parseLocalDate, toDateStr } from '../../lib/leaveRules';
+import { LeaveType, FacultyMember, LeaveRequest, SubstitutionSlot } from '../../types';
 import {
   CalendarCheck,
   Calendar,
@@ -39,7 +39,19 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
     getFreeFacultyForSlot,
     currentTheme,
     clock,
+    holidays,
+    leaveApproverFor,
+    admins,
+    dataSource,
   } = useApp();
+
+  // Who this faculty's requests go to, resolved from the admins table (same rule the database applies)
+  const approver = leaveApproverFor(faculty.deptShort);
+  const adminName = (id?: string | null) => admins.find((x) => x.id === id)?.name;
+  const reviewerLabel = (req: LeaveRequest) =>
+    req.status === 'Pending'
+      ? adminName(req.approverId) && `Awaiting ${adminName(req.approverId)}`
+      : adminName(req.reviewedBy) && `${req.status} by ${adminName(req.reviewedBy)}${req.reviewedAt ? ` on ${req.reviewedAt}` : ''}`;
 
   // Tab State: 'roster' | 'apply' | 'my-history'
   const [activeTab, setActiveTab] = useState<'roster' | 'apply' | 'my-history'>('roster');
@@ -54,6 +66,7 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
   const [substitutesMap, setSubstitutesMap] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Filter this faculty's personal request history
   const historyRequests = leaveRequests.filter((r) => r.facultyId === faculty.id);
@@ -69,21 +82,14 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
   };
 
   // Compute number of days
-  const daysCount = useMemo(() => {
-    if (!fromDate || !toDate) return 0;
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return 0;
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  }, [fromDate, toDate]);
+  const daysCount = useMemo(() => leaveDays(fromDate, toDate), [fromDate, toDate]);
 
   // Compute affected class periods when daysCount <= 2
   const affectedClasses = useMemo(() => {
     if (!fromDate || !toDate || daysCount <= 0 || daysCount > 2) return [];
 
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
+    const start = parseLocalDate(fromDate);
+    const end = parseLocalDate(toDate);
     const slots: {
       date: string;
       dayName: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
@@ -92,15 +98,15 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
     }[] = [];
 
     const current = new Date(start);
-    const pad = (n: number) => n.toString().padStart(2, '0');
 
     while (current <= end) {
       const dayIndex = current.getDay();
       const dayName = WEEKDAY_NAMES[dayIndex];
-      const dateStr = `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}`;
+      const dateStr = toDateStr(current);
 
-      // If Sunday, skip
-      if (dayName !== 'Sunday') {
+      // No classes on Sundays or calendar holidays, so nothing to cover
+      const isHoliday = holidays.some((h) => h.date === dateStr && h.type !== 'observance');
+      if (dayName !== 'Sunday' && !isHoliday) {
         const classesOnDay = faculty.timetable.filter((c) => c.day === dayName);
         classesOnDay.forEach((c) => {
           const slotKey = `${dateStr}_${c.periodNumber}_${c.startTime}`;
@@ -117,7 +123,13 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
     }
 
     return slots;
-  }, [fromDate, toDate, daysCount, faculty.timetable]);
+  }, [fromDate, toDate, daysCount, faculty.timetable, holidays]);
+
+  // College holidays inside the chosen range: no classes, so no substitutes are asked for
+  const holidaysInRange = useMemo(
+    () => (daysCount > 0 ? holidays.filter((h) => h.type !== 'observance' && h.date >= fromDate && h.date <= toDate) : []),
+    [holidays, fromDate, toDate, daysCount]
+  );
 
   const handleSubstituteChange = (slotKey: string, substituteId: string) => {
     setSubstitutesMap((prev) => ({
@@ -127,8 +139,9 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
     setFormError(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     setFormError(null);
     setSuccessMsg(null);
 
@@ -137,7 +150,7 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
       return;
     }
 
-    if (new Date(toDate) < new Date(fromDate)) {
+    if (toDate < fromDate) {
       setFormError('End date cannot precede start date.');
       return;
     }
@@ -168,6 +181,10 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
         );
 
         const chosenFac = freeFaculty.find((f) => f.id === chosenSubId);
+        if (!chosenFac) {
+          setFormError(`The colleague chosen for ${item.date} (${item.classPeriod.subject} at ${item.classPeriod.startTime}) is no longer free. Please pick another substitute.`);
+          return;
+        }
 
         generatedSubstitutions.push({
           date: item.date,
@@ -179,15 +196,15 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
           section: item.classPeriod.section,
           semester: item.classPeriod.semester,
           substituteFacultyId: chosenSubId,
-          substituteFacultyName: chosenFac?.name || 'Assigned Faculty',
+          substituteFacultyName: chosenFac.name,
           room: item.classPeriod.room,
           status: 'Pending',
         });
       }
     }
 
-    // Submit Request
-    submitLeaveRequest({
+    setSubmitting(true);
+    const result = await submitLeaveRequest({
       facultyId: faculty.id,
       facultyName: faculty.name,
       department: faculty.department,
@@ -199,8 +216,17 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
       reason: reason.trim(),
       substitutions: generatedSubstitutions,
     });
+    setSubmitting(false);
 
-    setSuccessMsg('Leave request submitted successfully for administrative audit.');
+    if (!result.ok) {
+      setFormError(`Leave request not submitted: ${result.error}`);
+      return;
+    }
+    setSuccessMsg(
+      result.offline
+        ? 'Saved in this browser while the database is offline. It will be sent for review once the connection is back.'
+        : `Leave request submitted and sent to ${approver?.name ?? 'the reviewing admin'} for approval.`
+    );
     setFromDate('');
     setToDate('');
     setReason('');
@@ -297,6 +323,17 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
         </div>
       </div>
 
+      {/* Shown on every tab: after submitting, the view switches to My Applications */}
+      {successMsg && (
+        <div role="status" className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+            <span>{successMsg}</span>
+          </span>
+          <button type="button" onClick={() => setSuccessMsg(null)} className="shrink-0 font-bold hover:underline">Dismiss</button>
+        </div>
+      )}
+
       {/* ──────────────── TAB 1: INSTITUTIONAL LEAVE ROSTER & REAL DATA ──────────────── */}
       {activeTab === 'roster' && (
         <div className="space-y-4 animate-in fade-in duration-150">
@@ -380,7 +417,7 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
                           <span className="text-sm font-bold text-[#10233f]">
                             {req.facultyName} {isMe && <span className="text-[10px] text-blue-600 font-semibold">(You)</span>}
                           </span>
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#eff6ff] text-blue-700">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[var(--accent-light)] text-blue-700">
                             {req.department}
                           </span>
                           <span className="text-[10px] font-bold text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded-md">
@@ -427,6 +464,12 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
                             </>
                           )}
                           <span>Requested on {req.createdAt}</span>
+                          {reviewerLabel(req) && (
+                            <>
+                              <span>·</span>
+                              <span>{reviewerLabel(req)}</span>
+                            </>
+                          )}
                         </div>
 
                         <p className="text-[11px] text-[#10233f] bg-[#f8fbff] p-2.5 rounded-xl border border-[#e2ecf9] italic leading-relaxed">
@@ -519,13 +562,6 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
             </div>
           )}
 
-          {successMsg && (
-            <div className="mb-4 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-              <span>{successMsg}</span>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Date Picker Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
@@ -612,9 +648,14 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
                   </span>
                 </div>
 
+                {holidaysInRange.length > 0 && (
+                  <p className="text-[11px] text-emerald-700">
+                    No substitute needed on {holidaysInRange.map((h) => `${h.date} (${h.title})`).join(', ')}: college holiday.
+                  </p>
+                )}
                 {affectedClasses.length === 0 ? (
                   <p className="text-xs text-emerald-700">
-                    No teaching periods scheduled on selected dates.
+                    {holidaysInRange.length ? 'No other teaching periods fall on the selected dates.' : 'No teaching periods scheduled on selected dates.'}
                   </p>
                 ) : (
                   <div className="space-y-2.5">
@@ -686,21 +727,34 @@ export const FacultyLeave: React.FC<FacultyLeaveProps> = ({ faculty }) => {
               <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/50 text-xs text-amber-900 flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <strong>Extended Leave ({daysCount} days):</strong> Substitution scheduling is managed centrally by Academic Administration. Request will be forwarded directly to {ADMIN_USER.name} ({ADMIN_USER.position}).
+                  <strong>Extended Leave ({daysCount} days):</strong> Substitution scheduling is managed centrally by Academic Administration.
                 </div>
               </div>
+            )}
+
+            {/* Recipient, from the admins table */}
+            {approver ? (
+              <p className="text-[11px] text-[#657894]">
+                This request will be sent to <strong className="text-[#10233f]">{approver.name}</strong> ({approver.position}) for approval.
+                {dataSource !== 'supabase' && ' The database is offline, so it will be held in this browser until the connection is back.'}
+              </p>
+            ) : (
+              <p className="p-3 rounded-xl border border-red-200 bg-red-50 text-[11px] font-medium text-red-700">
+                No active admin is set up to review leave for {faculty.department}, so requests cannot be submitted yet. Please contact the institution office.
+              </p>
             )}
 
             {/* Submit Button */}
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl font-bold text-xs text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+              disabled={submitting || !approver}
+              className="px-5 py-2.5 rounded-xl font-bold text-xs text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
               style={{
                 background: `linear-gradient(135deg, ${currentTheme.primaryHex}, ${currentTheme.deepHex})`,
               }}
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Submit Leave Request</span>
+              <span>{submitting ? 'Submitting…' : 'Submit Leave Request'}</span>
             </button>
           </form>
         </div>

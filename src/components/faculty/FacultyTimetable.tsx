@@ -226,7 +226,7 @@ export const FacultyTimetable: React.FC<FacultyTimetableProps> = ({ faculty }) =
                           >
                             <div>
                               <div className="flex items-center justify-between gap-1 mb-1">
-                                <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-[#eff6ff] text-blue-700">
+                                <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-[var(--accent-light)] text-blue-700">
                                   {classCell.subjectCode}
                                 </span>
                                 {isNow && (

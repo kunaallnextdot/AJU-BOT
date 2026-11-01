@@ -7,9 +7,15 @@ import {
   rowToFaculty,
   leaveToRow,
   rowToLeave,
+  AdminRow,
+  rowToAdmin,
+  HolidayRow,
   subscribeToChanges,
 } from '../lib/supabase';
+import { findOverlappingLeave, isRoutedTo, resolveApprover } from '../lib/leaveRules';
+import { ACCENT_SHADES, SHADE_STEPS } from '../lib/themePalettes';
 import {
+  AdminUser,
   CurrentUser,
   FacultyMember,
   LeaveRequest,
@@ -74,22 +80,30 @@ interface AppContextType {
     moduleName: string
   ) => void;
   submitLeaveRequest: (
-    req: Omit<LeaveRequest, 'id' | 'createdAt' | 'status'>
-  ) => void;
+    req: Omit<LeaveRequest, 'id' | 'createdAt' | 'status' | 'approverId' | 'reviewedBy' | 'reviewedAt'>
+  ) => Promise<WriteResult<LeaveRequest>>;
   addFaculty: (
     faculty: Omit<FacultyMember, 'id' | 'role' | 'avatarInitials' | 'timetable' | 'subjects'>
-  ) => FacultyMember;
+  ) => Promise<WriteResult<FacultyMember>>;
   updateLeaveRequestStatus: (
     requestId: string,
     status: 'Approved' | 'Rejected'
-  ) => void;
+  ) => Promise<WriteResult<LeaveRequest>>;
+  /** Active admin accounts (from the admins table, or the bundled snapshot when offline) */
+  admins: AdminUser[];
+  /** The admin a leave request from this department is routed to; null when none is configured */
+  leaveApproverFor: (deptShort: string) => AdminUser | null;
   logout: () => void;
   loginUser: (user: CurrentUser) => void;
   /** 'supabase' once live data has loaded, 'local' when running on the bundled DB snapshot */
   dataSource: 'loading' | 'supabase' | 'local';
   syncError: string | null;
   clearSyncError: () => void;
+  showError: (message: string) => void;
 }
+
+/** Outcome of a write. `offline` means it is kept in this browser and uploaded once Supabase connects. */
+export type WriteResult<T> = { ok: true; value: T; offline: boolean } | { ok: false; error: string };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -146,7 +160,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_LEAVE_REQUESTS;
   });
 
-  const [holidays] = useState<AcademicHoliday[]>(ACADEMIC_HOLIDAYS);
+  // Bundled snapshots until the admins / holidays tables load
+  const [holidays, setHolidays] = useState<AcademicHoliday[]>(ACADEMIC_HOLIDAYS);
+  const [admins, setAdmins] = useState<AdminUser[]>([ADMIN_USER]);
 
   // Current logged in user
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() => {
@@ -159,11 +175,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return null;
   });
 
-  // AJU BOT is intentionally standardized to one light institutional theme.
-  // Keep the context value for existing components, but do not expose a user theme switcher.
-  const currentTheme = THEME_PALETTES[0];
+  // Theme is a per-user, per-device choice; the login screen always uses the default brand theme
+  const themeKey = currentUser ? `aju_v2_theme:${currentUser.id}` : null;
+  const readTheme = (key: string | null) => {
+    try {
+      const id = key && localStorage.getItem(key);
+      return THEME_PALETTES.find((t) => t.id === id) ?? THEME_PALETTES[0];
+    } catch {
+      return THEME_PALETTES[0];
+    }
+  };
+  const [currentTheme, setCurrentTheme] = useState<ThemeConfig>(() => readTheme(themeKey));
+  useEffect(() => setCurrentTheme(readTheme(themeKey)), [themeKey]);
 
-  // Apply the fixed light theme variables once the provider mounts.
+  const setTheme = (themeId: string) => {
+    const theme = THEME_PALETTES.find((t) => t.id === themeId);
+    if (!theme) return;
+    setCurrentTheme(theme);
+    try {
+      if (themeKey) localStorage.setItem(themeKey, theme.id);
+    } catch {
+      // storage blocked: the theme still applies for this session
+    }
+  };
+
+  // Push the theme into CSS: the --accent* variables, and for non-blue themes the
+  // Tailwind --color-blue-* scale, so every blue-* utility in the app follows the theme.
   useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--accent', currentTheme.primaryHex);
@@ -171,7 +208,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     root.style.setProperty('--accent-light', currentTheme.lightHex);
     root.style.setProperty('--accent-border', currentTheme.borderHex);
     root.style.setProperty('--accent-glow', currentTheme.glowHex);
-
+    const shades = ACCENT_SHADES[currentTheme.accent];
+    SHADE_STEPS.forEach((step) => {
+      if (shades) root.style.setProperty(`--color-blue-${step}`, shades[step]);
+      else root.style.removeProperty(`--color-blue-${step}`);
+    });
+    if (shades) root.style.setProperty('--bg-main', `color-mix(in oklab, ${shades[50]} 70%, white)`);
+    else root.style.removeProperty('--bg-main');
+    root.dataset.theme = currentTheme.id;
   }, [currentTheme]);
 
   // ---------- Supabase sync ----------
@@ -184,6 +228,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [dataSource, setDataSource] = useState<'loading' | 'supabase' | 'local'>(supabase ? 'loading' : 'local');
   const [syncError, setSyncError] = useState<string | null>(null);
   const synced = useRef<{ faculty: Map<string, string>; leave: Map<string, string> } | null>(null);
+  // approver_id / reviewed_by exist only once the admins migration is applied
+  const hasRouting = useRef(false);
+  const toLeaveRow = (l: LeaveRequest) =>
+    leaveToRow(hasRouting.current ? l : { ...l, approverId: undefined, reviewedBy: undefined });
 
   useEffect(() => {
     const db = supabase;
@@ -195,8 +243,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const fetchLeave = () => db.from('leave_requests').select('*').order('created_at', { ascending: false });
 
     (async () => {
-      const [f, l] = await Promise.all([fetchFaculty(), fetchLeave()]);
+      const [f, l, a, h] = await Promise.all([
+        fetchFaculty(),
+        fetchLeave(),
+        db.from('admins').select('*').order('created_at'),
+        db.from('holidays').select('*').order('date'),
+      ]);
       if (cancelled) return;
+      // Before the admins/holidays migration is applied these fail; keep the snapshots then
+      if (a.error) console.warn('admins table unavailable, using bundled admin:', a.error.message);
+      else {
+        hasRouting.current = true;
+        setAdmins((a.data as AdminRow[]).map(rowToAdmin));
+      }
+      if (h.error) console.warn('holidays table unavailable, using bundled calendar:', h.error.message);
+      else setHolidays(h.data as HolidayRow[]);
       if (f.error || l.error) {
         const message = (f.error ?? l.error)?.message;
         console.error('Supabase load failed, using local data:', message);
@@ -225,7 +286,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setDataSource('supabase');
     })();
 
-    const unsubscribe = subscribeToChanges(async (table) => {
+    const reload = async (table: 'faculty' | 'leave_requests') => {
       if (!synced.current) return;
       if (table === 'faculty') {
         const { data, error } = await fetchFaculty();
@@ -238,13 +299,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (cancelled || error || !data) return;
         const leave = (data as LeaveRow[]).map(rowToLeave);
         leave.forEach((x) => synced.current?.leave.set(x.id, JSON.stringify(x)));
-        setLeaveRequests(leave);
+        setLeaveRequests((prev) => {
+          // Leave rows are never deleted, so a local row missing here is one still being
+          // saved (or made offline): keep it rather than let a stale read drop it.
+          const fetched = new Set(leave.map((x) => x.id));
+          const next = [...prev.filter((x) => !fetched.has(x.id)), ...leave];
+          return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
+        });
       }
-    });
+    };
+    const unsubscribe = subscribeToChanges(reload);
+
+    // Safety net when Realtime is off or the socket drops: re-read leave while the tab is
+    // visible and whenever the user comes back to it, so admin and faculty stay in step.
+    const poll = setInterval(() => {
+      if (document.visibilityState === 'visible') reload('leave_requests');
+    }, 20_000);
+    const onVisible = () => document.visibilityState === 'visible' && reload('leave_requests');
+    document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       cancelled = true;
       unsubscribe();
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
@@ -265,21 +343,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
   }, [facultyList, remoteReady]);
 
+  // Leave writes normally go through submitLeaveRequest / updateLeaveRequestStatus, which
+  // save first. This catches what is left: requests made while offline, uploaded on connect.
   useEffect(() => {
-    if (!remoteReady || !supabase || !synced.current) return;
+    const db = supabase;
+    if (!remoteReady || !db || !synced.current) return;
     const saved = synced.current.leave;
     const changed = leaveRequests.filter((x) => saved.get(x.id) !== JSON.stringify(x));
-    if (changed.length === 0) return;
-    changed.forEach((x) => saved.set(x.id, JSON.stringify(x)));
-    supabase
-      .from('leave_requests')
-      .upsert(changed.map(leaveToRow))
-      .then(({ error }) => {
-        if (!error) return;
+    changed.forEach(async (x) => {
+      const existed = saved.has(x.id);
+      saved.set(x.id, JSON.stringify(x));
+      const { data, error } = existed
+        ? await db.from('leave_requests').update(toLeaveRow(x)).eq('id', x.id).select().single()
+        : await db.from('leave_requests').insert(toLeaveRow(x)).select().single();
+      if (error) {
         console.error('Supabase leave save failed:', error.message);
-        setSyncError(`Couldn't save leave changes to Supabase: ${error.message}`);
-        changed.forEach((x) => saved.delete(x.id));
-      });
+        saved.delete(x.id);
+        if (existed) {
+          setSyncError(`Couldn't save leave changes to Supabase: ${error.message}`);
+        } else {
+          // The database refused an offline request (e.g. overlapping dates): drop it rather than show it as sent
+          setLeaveRequests((prev) => prev.filter((r) => r.id !== x.id));
+          setSyncError(`An offline leave request (${x.fromDate} to ${x.toDate}) could not be submitted: ${error.message}`);
+        }
+        return;
+      }
+      const stored = rowToLeave(data as LeaveRow);
+      saved.set(stored.id, JSON.stringify(stored));
+      setLeaveRequests((prev) => prev.map((r) => (r.id === stored.id ? stored : r)));
+    });
   }, [leaveRequests, remoteReady]);
 
   // Save faculty list and keep currentUser updated if faculty
@@ -355,9 +447,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const resetClockToRealtime = () => {
     setClock(getNowClock());
   };
-
-  // Kept as a no-op for compatibility with older view components.
-  const setTheme = (_id: string) => undefined;
 
   // Convert HH:MM to total minutes from midnight for interval math
   const timeToMinutes = (t: string) => {
@@ -435,6 +524,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (onLeave) return false;
 
+      // Already covering someone else's class in an overlapping slot that day
+      const alreadySubstituting = leaveRequests.some(
+        (l) =>
+          l.status !== 'Rejected' &&
+          l.substitutions.some(
+            (s) =>
+              s.substituteFacultyId === faculty.id &&
+              s.date === date &&
+              s.status !== 'Rejected' &&
+              startMins < timeToMinutes(s.endTime) &&
+              endMins > timeToMinutes(s.startTime)
+          )
+      );
+      if (alreadySubstituting) return false;
+
       // Check if teaching during that slot
       const hasConflict = faculty.timetable.some((c) => {
         if (c.day !== day) return false;
@@ -510,23 +614,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const leaveApproverFor = (deptShort: string) => resolveApprover(admins, deptShort);
+
+  // Online, the database row is saved first so the UI only ever shows stored data
+  const isOnline = () => !!(remoteReady && supabase && synced.current);
+
   // Submit new leave request
-  const submitLeaveRequest = (
-    req: Omit<LeaveRequest, 'id' | 'createdAt' | 'status'>
-  ) => {
-    const newRequest: LeaveRequest = {
+  const submitLeaveRequest: AppContextType['submitLeaveRequest'] = async (req) => {
+    if (findOverlappingLeave(leaveRequests, req.facultyId, req.fromDate, req.toDate)) {
+      return { ok: false, error: 'You already have a pending or approved leave that overlaps these dates.' };
+    }
+    if (!leaveApproverFor(req.deptShort)) {
+      return { ok: false, error: `No active admin is configured to review leave for ${req.department}. Please contact the institution office.` };
+    }
+    const draft: LeaveRequest = {
       ...req,
       id: `leave-${Date.now()}`,
       status: 'Pending',
       createdAt: `${clock.dateStr} ${clock.timeStr}`,
     };
-    setLeaveRequests((prev) => [newRequest, ...prev]);
+    if (!isOnline()) {
+      setLeaveRequests((prev) => [draft, ...prev]);
+      return { ok: true, value: draft, offline: true };
+    }
+    // The database assigns approver_id and re-checks the dates and overlap
+    const { data, error } = await supabase!.from('leave_requests').insert(toLeaveRow(draft)).select().single();
+    if (error) return { ok: false, error: error.message };
+    const stored = rowToLeave(data as LeaveRow);
+    synced.current!.leave.set(stored.id, JSON.stringify(stored));
+    setLeaveRequests((prev) => [stored, ...prev]);
+    return { ok: true, value: stored, offline: false };
   };
 
   // Register a newly joined faculty member (no timetable or subjects yet)
-  const addFaculty = (
-    data: Omit<FacultyMember, 'id' | 'role' | 'avatarInitials' | 'timetable' | 'subjects'>
-  ) => {
+  const addFaculty: AppContextType['addFaculty'] = async (data) => {
     const initials = data.name
       .trim()
       .split(/\s+/)
@@ -542,21 +663,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timetable: [],
       subjects: [],
     };
-    setFacultyList((prev) => [...prev, faculty]);
-    return faculty;
+    if (!isOnline()) {
+      setFacultyList((prev) => [...prev, faculty]);
+      return { ok: true, value: faculty, offline: true };
+    }
+    const { data: row, error } = await supabase!.from('faculty').insert(facultyToRow(faculty)).select().single();
+    if (error) {
+      return { ok: false, error: /duplicate key/i.test(error.message) ? 'A faculty member with this email or employee code already exists.' : error.message };
+    }
+    const stored = rowToFaculty(row as FacultyRow);
+    synced.current!.faculty.set(stored.id, JSON.stringify(stored));
+    setFacultyList((prev) => [...prev, stored]);
+    return { ok: true, value: stored, offline: false };
   };
 
   // Approve / Reject leave
-  const updateLeaveRequestStatus = (
-    requestId: string,
-    status: 'Approved' | 'Rejected'
-  ) => {
-    // Leave and its substitution requests are reviewed together
-    const reviewedAt = `${clock.dateStr} ${clock.timeStr}`;
+  const updateLeaveRequestStatus: AppContextType['updateLeaveRequestStatus'] = async (requestId, status) => {
     const target = leaveRequests.find((r) => r.id === requestId);
-    if (!target) return;
-    const updated: LeaveRequest = { ...target, status, reviewedAt, substitutions: target.substitutions.map((sub) => ({ ...sub, status })) };
-    setLeaveRequests((prev) => prev.map((r) => (r.id === requestId ? updated : r)));
+    if (!target) return { ok: false, error: 'This leave request no longer exists.' };
+    if (target.status === status) return { ok: true, value: target, offline: false };
+    // Leave and its substitution requests are reviewed together
+    const updated: LeaveRequest = {
+      ...target,
+      status,
+      reviewedAt: `${clock.dateStr} ${clock.timeStr}`,
+      reviewedBy: currentUser?.role === 'admin' ? currentUser.id : target.reviewedBy,
+      substitutions: target.substitutions.map((sub) => ({ ...sub, status })),
+    };
+    if (!isOnline()) {
+      setLeaveRequests((prev) => prev.map((r) => (r.id === requestId ? updated : r)));
+      return { ok: true, value: updated, offline: true };
+    }
+    const { data, error } = await supabase!.from('leave_requests').update(toLeaveRow(updated)).eq('id', requestId).select().single();
+    if (error) return { ok: false, error: error.message };
+    const stored = rowToLeave(data as LeaveRow);
+    synced.current!.leave.set(stored.id, JSON.stringify(stored));
+    setLeaveRequests((prev) => prev.map((r) => (r.id === requestId ? stored : r)));
+    return { ok: true, value: stored, offline: false };
   };
 
   const loginUser = (user: CurrentUser) => {
@@ -573,8 +716,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         setCurrentUser,
         facultyList,
-        leaveRequests,
+        leaveRequests: currentUser?.role === 'admin' ? leaveRequests.filter((r) => isRoutedTo(r, currentUser.id)) : leaveRequests,
         holidays,
+        admins: admins.filter((a) => a.isActive !== false),
+        leaveApproverFor,
         presence: FACULTY_PRESENCE,
         sessions: CLASS_SESSIONS,
         feedback: COURSE_FEEDBACK,
@@ -596,6 +741,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dataSource,
         syncError,
         clearSyncError: () => setSyncError(null),
+        showError: setSyncError,
       }}
     >
       {children}

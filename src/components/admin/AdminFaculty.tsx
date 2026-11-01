@@ -26,7 +26,7 @@ export const AdminFaculty: React.FC<AdminFacultyProps> = ({
     return null;
   });
   const [showAddFaculty, setShowAddFaculty] = useState(false);
-  const [addedFaculty, setAddedFaculty] = useState<FacultyMember | null>(null);
+  const [addedFaculty, setAddedFaculty] = useState<{ faculty: FacultyMember; offline: boolean } | null>(null);
 
   const handleCardClick = (faculty: FacultyMember) => {
     setActiveDrawerFaculty(faculty);
@@ -114,7 +114,7 @@ export const AdminFaculty: React.FC<AdminFacultyProps> = ({
       {addedFaculty && (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs text-emerald-800">
           <span>
-            <strong>{addedFaculty.name}</strong> was added to {addedFaculty.department}. They can now sign in with their name or {addedFaculty.email}.
+            <strong>{addedFaculty.faculty.name}</strong> was {addedFaculty.offline ? 'saved in this browser (offline) and will be uploaded when the database reconnects' : 'added'} to {addedFaculty.faculty.department}. They can sign in with their name or {addedFaculty.faculty.email}.
           </span>
           <button onClick={() => setAddedFaculty(null)} className="cursor-pointer rounded p-0.5 hover:bg-emerald-100" aria-label="Dismiss">
             <X className="h-3.5 w-3.5" />
@@ -273,9 +273,9 @@ export const AdminFaculty: React.FC<AdminFacultyProps> = ({
       {showAddFaculty && (
         <AddFacultyModal
           onClose={() => setShowAddFaculty(false)}
-          onAdded={(faculty) => {
+          onAdded={(faculty, offline) => {
             setShowAddFaculty(false);
-            setAddedFaculty(faculty);
+            setAddedFaculty({ faculty, offline });
             setActiveFilter('all');
             setSearchQuery('');
           }}

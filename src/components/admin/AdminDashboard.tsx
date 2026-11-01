@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useLeaveReview } from '../../lib/useLeaveReview';
 import {
   ArrowRight,
   BookOpen,
@@ -40,7 +41,8 @@ const Section: React.FC<{ title: string; hint: string; action?: React.ReactNode;
 );
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab, onOpenFacultyDrawer }) => {
-  const { facultyList, leaveRequests, getFacultyLiveStatus, clock, updateLeaveRequestStatus, sessions, feedback } = useApp();
+  const { facultyList, leaveRequests, getFacultyLiveStatus, clock, sessions, feedback } = useApp();
+  const { review, busyId } = useLeaveReview();
   const [showReports, setShowReports] = useState(false);
 
   const hour = Number(clock.timeStr.split(':')[0]);
@@ -183,10 +185,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab, o
                       : 'No classes need covering'}
                   </p>
                   <div className="mt-3 flex gap-2">
-                    <button onClick={() => updateLeaveRequestStatus(leave.id, 'Approved')} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-emerald-700">
+                    <button onClick={() => review(leave.id, 'Approved')} disabled={busyId === leave.id} className="disabled:opacity-60 inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-emerald-700">
                       <Check className="h-4 w-4" /> Approve
                     </button>
-                    <button onClick={() => updateLeaveRequestStatus(leave.id, 'Rejected')} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-[13px] font-semibold text-red-600 hover:bg-red-50">
+                    <button onClick={() => review(leave.id, 'Rejected')} disabled={busyId === leave.id} className="disabled:opacity-60 inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-[13px] font-semibold text-red-600 hover:bg-red-50">
                       <XCircle className="h-4 w-4" /> Reject
                     </button>
                   </div>

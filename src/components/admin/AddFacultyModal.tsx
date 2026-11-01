@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { UserPlus, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { toDateStr } from '../../lib/leaveRules';
 import { FacultyMember } from '../../types';
 
 interface AddFacultyModalProps {
   onClose: () => void;
-  onAdded: (faculty: FacultyMember) => void;
+  onAdded: (faculty: FacultyMember, offline: boolean) => void;
 }
 
 const POSITIONS = ['Professor', 'Associate Professor', 'Assistant Professor'];
@@ -44,10 +45,11 @@ export const AddFacultyModal: React.FC<AddFacultyModalProps> = ({ onClose, onAdd
     newDeptShort: '',
     employeeCode: nextEmployeeCode,
     cabin: '',
-    joinedOn: new Date().toISOString().slice(0, 10),
+    joinedOn: toDateStr(new Date()),
     currentSection: '',
   });
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -56,8 +58,9 @@ export const AddFacultyModal: React.FC<AddFacultyModalProps> = ({ onClose, onAdd
 
   const isNewDept = form.department === NEW_DEPARTMENT;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     const name = form.name.trim();
     const email = form.email.trim().toLowerCase();
     const employeeCode = form.employeeCode.trim().toUpperCase();
@@ -83,7 +86,8 @@ export const AddFacultyModal: React.FC<AddFacultyModalProps> = ({ onClose, onAdd
       return;
     }
 
-    const faculty = addFaculty({
+    setSaving(true);
+    const result = await addFaculty({
       name,
       email,
       phone: form.phone.trim() || null,
@@ -96,7 +100,12 @@ export const AddFacultyModal: React.FC<AddFacultyModalProps> = ({ onClose, onAdd
       joinedOn: form.joinedOn || null,
       currentSection: form.currentSection.trim() || 'Not assigned',
     });
-    onAdded(faculty);
+    setSaving(false);
+    if (!result.ok) {
+      setError(`Couldn't add faculty: ${result.error}`);
+      return;
+    }
+    onAdded(result.value, result.offline);
   };
 
   return (
@@ -206,10 +215,11 @@ export const AddFacultyModal: React.FC<AddFacultyModalProps> = ({ onClose, onAdd
             </button>
             <button
               type="submit"
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90"
+              disabled={saving}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 disabled:cursor-wait disabled:opacity-60"
               style={{ background: `linear-gradient(135deg, ${currentTheme.primaryHex}, ${currentTheme.deepHex})` }}
             >
-              <UserPlus className="h-3.5 w-3.5" /> Add faculty
+              <UserPlus className="h-3.5 w-3.5" /> {saving ? 'Saving…' : 'Add faculty'}
             </button>
           </div>
         </div>

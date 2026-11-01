@@ -7,7 +7,6 @@ import {
   CalendarDays,
   Settings,
   Clock,
-  LogOut,
   Sparkles,
 } from 'lucide-react';
 
@@ -27,7 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onCloseMobile,
 }) => {
-  const { currentUser, logout, currentTheme, leaveRequests } = useApp();
+  const { currentUser, currentTheme, leaveRequests } = useApp();
 
   if (!currentUser) return null;
 
@@ -138,7 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Bottom-Fixed Identity Block (Always visible, outside scroll) */}
         <div className="p-4 border-t border-[#eaf2fc] bg-white">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3">
             {/* Circular avatar with user's initials */}
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-xs text-white"
@@ -160,15 +159,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </p>
             </div>
           </div>
-
-          {/* Logout button */}
-          <button
-            onClick={logout}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-[#dce8f7] bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 text-[#657894] text-xs font-semibold transition-all cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign out</span>
-          </button>
         </div>
       </aside>
     </>

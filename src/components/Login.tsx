@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ADMIN_USER } from '../data/mockData';
-import { AlertCircle, ArrowRight, KeyRound, ShieldCheck, Sparkles, User } from 'lucide-react';
+import { AlertCircle, ArrowRight, Eye, EyeOff, KeyRound, ShieldCheck, Sparkles, User } from 'lucide-react';
 import heroCampusImg from '../assets/images/campus_hero_bg_1791294918467.jpg';
 import jgiLogo from '../assets/images/jgi_logo.png';
 import { BRAND_DEEP, BRAND_PRIMARY } from './Splash';
@@ -16,10 +15,11 @@ interface LoginProps {
 }
 
 export const Login: React.FC<LoginProps> = ({ onReplaySplash }) => {
-  const { facultyList, loginUser } = useApp();
+  const { facultyList, admins, loginUser } = useApp();
   const [roleFilter, setRoleFilter] = useState<'admin' | 'faculty'>('admin');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedQuickFill, setSelectedQuickFill] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,23 +51,30 @@ export const Login: React.FC<LoginProps> = ({ onReplaySplash }) => {
       return;
     }
 
-    const adminName = ADMIN_USER.name.toLowerCase();
-    // users table: admin@aju.example is the only admin account
-    const isMatchedAdmin = [adminName, 'admin', ADMIN_USER.email.toLowerCase()].includes(trimmedName);
+    // Admin accounts come from the admins table; "admin" works when there is exactly one
+    const matchedAdmin =
+      admins.find((a) => a.name.toLowerCase() === trimmedName || a.email.toLowerCase() === trimmedName) ??
+      (trimmedName === 'admin' && admins.length === 1 ? admins[0] : undefined);
 
-    if (isMatchedAdmin) {
+    if (matchedAdmin) {
       setTimeout(() => {
-        loginUser(ADMIN_USER);
+        loginUser(matchedAdmin);
         setIsSubmitting(false);
       }, 300);
       return;
     }
 
-    // Faculty sign in with their full name or their users.email
-    const matchedFaculty = facultyList.find((f) => {
-      const fName = f.name.toLowerCase();
-      return fName === trimmedName || f.email.toLowerCase() === trimmedName || (trimmedName.length >= 4 && fName.includes(trimmedName));
-    });
+    // Faculty sign in with their full name, their email, or a part of the name that matches only them
+    const exact = facultyList.find((f) => f.name.toLowerCase() === trimmedName || f.email.toLowerCase() === trimmedName);
+    const partial = trimmedName.length >= 4 ? facultyList.filter((f) => f.name.toLowerCase().includes(trimmedName)) : [];
+    if (!exact && partial.length > 1) {
+      setTimeout(() => {
+        setErrorMsg(`"${fullName.trim()}" matches ${partial.length} people. Please type the full name or email.`);
+        setIsSubmitting(false);
+      }, 250);
+      return;
+    }
+    const matchedFaculty = exact ?? partial[0];
 
     if (matchedFaculty) {
       setTimeout(() => {
@@ -134,7 +141,17 @@ export const Login: React.FC<LoginProps> = ({ onReplaySplash }) => {
             </div>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#657894]"><KeyRound className="h-4 w-4" /></div>
-              <input type="password" required value={password} onChange={(e) => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }} placeholder="Enter institution password" className={INPUT_CLASS} />
+              <input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }} placeholder="Enter institution password" autoComplete="current-password" className={`${INPUT_CLASS} pr-10`} />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute inset-y-0 right-0 flex cursor-pointer items-center rounded-r-xl px-3 text-[#657894] hover:text-[#10233f] focus:outline-none focus-visible:text-blue-600"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
           </div>
           <button type="submit" disabled={isSubmitting} className="mt-1.5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-md transition-all duration-200 hover:shadow-lg active:scale-[0.99] disabled:opacity-75 sm:text-[13px]" style={{ background: BRAND_GRADIENT }}>
@@ -154,13 +171,15 @@ export const Login: React.FC<LoginProps> = ({ onReplaySplash }) => {
           </div>
           <div className="max-h-36 space-y-1.5 overflow-y-auto pr-1">
             {roleFilter === 'admin' ? (
-              <button type="button" onClick={() => handleQuickFill(ADMIN_USER.name)} className={`flex w-full cursor-pointer items-center justify-between rounded-lg border p-2 text-left text-xs transition-colors ${selectedQuickFill === ADMIN_USER.name ? 'border-blue-400 bg-blue-50/90 ring-1 ring-blue-300' : 'border-[#e2ecf9] bg-[#f6faff] hover:bg-[#eaf3fe]'}`}>
-                <div className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-800">{ADMIN_USER.avatarInitials}</span>
-                  <span className="text-xs font-semibold text-[#10233f]">{ADMIN_USER.name}</span>
-                </div>
-                <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-700">Admin</span>
-              </button>
+              admins.map((a) => (
+                <button key={a.id} type="button" onClick={() => handleQuickFill(a.name)} className={`flex w-full cursor-pointer items-center justify-between rounded-lg border p-2 text-left text-xs transition-colors ${selectedQuickFill === a.name ? 'border-blue-400 bg-blue-50/90 ring-1 ring-blue-300' : 'border-[#e2ecf9] bg-[#f6faff] hover:bg-[#eaf3fe]'}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-800">{a.avatarInitials}</span>
+                    <span className="text-xs font-semibold text-[#10233f]">{a.name}</span>
+                  </div>
+                  <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-700">Admin</span>
+                </button>
+              ))
             ) : (
               facultyList.map((f) => (
                 <button key={f.id} type="button" onClick={() => handleQuickFill(f.name)} className={`flex w-full cursor-pointer items-center justify-between rounded-lg border p-2 text-left text-xs transition-colors ${selectedQuickFill === f.name ? 'border-blue-400 bg-blue-50/90 ring-1 ring-blue-300' : 'border-[#e2ecf9] bg-[#f8fbff] hover:bg-[#eaf3fe]'}`}>

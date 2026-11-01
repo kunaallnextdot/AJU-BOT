@@ -10,7 +10,8 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "build:single": "vite build --mode single && node scripts-inline-favicon.mjs",
-    "db:seed": "tsx scripts/seed-supabase.ts"
+    "db:seed": "tsx scripts/seed-supabase.ts",
+    "test": "tsx --test src/lib/*.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

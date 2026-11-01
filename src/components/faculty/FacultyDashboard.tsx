@@ -68,11 +68,11 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ faculty }) =
   return (
     <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
       {/* Top Header */}
-      <div className="relative overflow-hidden rounded-[26px] border border-[#e2ecf9] bg-[linear-gradient(135deg,#f0f6ff_0%,#f9fcff_56%,#eff6ff_100%)] p-5 sm:p-7">
+      <div className="relative overflow-hidden rounded-[26px] border border-[#e2ecf9] bg-[linear-gradient(135deg,#f0f6ff_0%,#f9fcff_56%,var(--accent-light)_100%)] p-5 sm:p-7">
         <div className="absolute -right-14 -top-16 h-48 w-48 rounded-full bg-[#dcdcd8]/35 blur-2xl" />
         <div className="relative z-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[#2563eb] shadow-sm backdrop-blur">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--accent)] shadow-sm backdrop-blur">
               <Sparkles className="h-3.5 w-3.5" /> Faculty workspace
             </div>
             <h2 className="text-2xl font-extrabold tracking-[-0.045em] text-[#10233f] sm:text-3xl">
@@ -192,7 +192,7 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({ faculty }) =
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#eff6ff] text-blue-700">
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[var(--accent-light)] text-blue-700">
                         {subject.section}
                       </span>
                       <span className="text-xs font-mono font-bold text-[#657894]">

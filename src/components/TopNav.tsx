@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, CheckCircle2, ChevronDown, Clock, Menu, Search, XCircle } from 'lucide-react';
+import { useLeaveReview } from '../lib/useLeaveReview';
+import { ProfileModal } from './common/ProfileModal';
+import { Bell, CheckCircle2, ChevronDown, Clock, LogOut, Menu, Search, UserRound, XCircle } from 'lucide-react';
 
 interface TopNavProps {
   title: string;
@@ -28,11 +30,29 @@ const FACULTY_PAGES = [
 ];
 
 export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenLeaveRequests, onNavigate }) => {
-  const { currentUser, currentTheme, clock, leaveRequests, updateLeaveRequestStatus, facultyList, dataSource } = useApp();
+  const { currentUser, currentTheme, clock, leaveRequests, facultyList, dataSource, logout } = useApp();
+  const { review, busyId } = useLeaveReview();
   const [query, setQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
-  const [showProfilePopover, setShowProfilePopover] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close the profile menu on an outside click or Escape
+  useEffect(() => {
+    if (!showProfileMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (!profileMenuRef.current?.contains(e.target as Node)) setShowProfileMenu(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setShowProfileMenu(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showProfileMenu]);
 
   if (!currentUser) return null;
 
@@ -134,7 +154,7 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
             </button>
             {showNotifications && <div className="absolute right-0 top-10 z-50 w-[min(320px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[#dce8f7] bg-white shadow-[0_16px_36px_rgba(31,76,126,0.14)]">
               <div className="flex items-center justify-between border-b border-[#eaf2fc] px-4 py-3"><div><p className="text-[13px] font-bold text-[#10233f]">Pending requests</p><p className="mt-0.5 text-[10px] text-[#657894]">Needs an admin decision</p></div><span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">{pendingLeaves.length} open</span></div>
-              <div className="max-h-72 overflow-y-auto p-2">{pendingLeaves.length === 0 ? <div className="px-3 py-8 text-center text-xs text-[#657894]">You&apos;re all caught up.</div> : pendingLeaves.slice(0, 4).map((request) => <div key={request.id} className="rounded-xl px-3 py-3 transition hover:bg-[#f0f6ff]"><div className="flex items-start gap-2"><span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#f59e0b]" /><div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold text-[#10233f]">{request.facultyName}</p><p className="mt-0.5 truncate text-[10px] text-[#657894]">{request.department} · {request.daysCount} days</p><p className="mt-1 line-clamp-2 text-[10px] leading-4 text-[#657894]">{request.reason}</p><div className="mt-2 flex items-center gap-1.5"><button onClick={() => updateLeaveRequestStatus(request.id, 'Approved')} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white"><CheckCircle2 className="h-3 w-3" /> Approve</button><button onClick={() => updateLeaveRequestStatus(request.id, 'Rejected')} className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-[10px] font-bold text-red-600"><XCircle className="h-3 w-3" /> Reject</button></div></div></div></div>)}</div>
+              <div className="max-h-72 overflow-y-auto p-2">{pendingLeaves.length === 0 ? <div className="px-3 py-8 text-center text-xs text-[#657894]">You&apos;re all caught up.</div> : pendingLeaves.slice(0, 4).map((request) => <div key={request.id} className="rounded-xl px-3 py-3 transition hover:bg-[#f0f6ff]"><div className="flex items-start gap-2"><span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#f59e0b]" /><div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold text-[#10233f]">{request.facultyName}</p><p className="mt-0.5 truncate text-[10px] text-[#657894]">{request.department} · {request.daysCount} days</p><p className="mt-1 line-clamp-2 text-[10px] leading-4 text-[#657894]">{request.reason}</p><div className="mt-2 flex items-center gap-1.5"><button onClick={() => review(request.id, 'Approved')} disabled={busyId === request.id} className="disabled:opacity-60 inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white"><CheckCircle2 className="h-3 w-3" /> Approve</button><button onClick={() => review(request.id, 'Rejected')} disabled={busyId === request.id} className="disabled:opacity-60 inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-[10px] font-bold text-red-600"><XCircle className="h-3 w-3" /> Reject</button></div></div></div></div>)}</div>
               <button onClick={() => { setShowNotifications(false); onOpenLeaveRequests?.(); }} className="flex w-full items-center justify-center gap-1 border-t border-[#eaf2fc] bg-[#f8fbff] px-4 py-2.5 text-[11px] font-bold text-blue-600 hover:bg-blue-50 hover:text-blue-800">Open leave management <span>→</span></button>
             </div>}
           </div>
@@ -167,16 +187,16 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
           />
         </div>
 
-        {/* Top-Right Profile Avatar with Hover Popover */}
-        <div
-          className="relative"
-          onMouseEnter={() => setShowProfilePopover(true)}
-          onMouseLeave={() => setShowProfilePopover(false)}
-          onFocus={() => setShowProfilePopover(true)}
-          onBlur={() => setShowProfilePopover(false)}
-          tabIndex={0}
-        >
-          <div className="flex cursor-pointer items-center gap-2.5">
+        {/* Top-right profile menu: opens My Profile or signs out */}
+        <div className="relative" ref={profileMenuRef}>
+          <button
+            type="button"
+            onClick={() => setShowProfileMenu((open) => !open)}
+            className="flex cursor-pointer items-center gap-2.5 rounded-xl p-0.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+            aria-haspopup="menu"
+            aria-expanded={showProfileMenu}
+            aria-label="Open profile menu"
+          >
             <div
               className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white shadow-xs transition-transform hover:scale-105"
               style={{
@@ -187,44 +207,57 @@ export const TopNav: React.FC<TopNavProps> = ({ title, onOpenMobileMenu, onOpenL
             </div>
             <div className="hidden leading-tight xl:block">
               <p className="text-xs font-bold text-[#10233f]">{currentUser.name.split(' ').slice(0, 2).join(' ')}</p>
-              <p className="text-[11px] font-medium text-[#657894]">{isAdmin ? 'Admin' : (currentUser as any).deptShort + ' Faculty'}</p>
+              <p className="text-[11px] font-medium text-[#657894]">{isAdmin ? 'Admin' : `${currentUser.deptShort} Faculty`}</p>
             </div>
-            <ChevronDown className="hidden h-3.5 w-3.5 text-[#657894] xl:block" />
-          </div>
+            <ChevronDown className={`hidden h-3.5 w-3.5 text-[#657894] transition-transform xl:block ${showProfileMenu ? 'rotate-180' : ''}`} />
+          </button>
 
-          {/* Popover / Tooltip */}
-          {showProfilePopover && (
-            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-[#dce8f7] shadow-xl p-3 z-50 pointer-events-none transition-all duration-150">
-              <div className="flex items-center gap-2.5 mb-2">
+          {showProfileMenu && (
+            <div role="menu" className="absolute right-0 top-11 z-50 w-[min(272px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[#dce8f7] bg-white shadow-[0_16px_36px_rgba(31,76,126,0.14)]">
+              <div className="flex items-center gap-2.5 border-b border-[#eaf2fc] px-3.5 py-3">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0"
-                  style={{
-                    background: `linear-gradient(135deg, ${currentTheme.primaryHex}, ${currentTheme.deepHex})`,
-                  }}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                  style={{ background: `linear-gradient(135deg, ${currentTheme.primaryHex}, ${currentTheme.deepHex})` }}
                 >
                   {currentUser.avatarInitials}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-[#10233f] truncate">
-                    {currentUser.name}
-                  </p>
-                  <p className="text-[11px] font-medium text-[#657894] truncate">
-                    {currentUser.email}
-                  </p>
+                  <p className="truncate text-xs font-bold text-[#10233f]">{currentUser.name}</p>
+                  <p className="truncate text-[11px] text-[#657894]">{currentUser.position}{isAdmin ? '' : ` · ${currentUser.deptShort}`}</p>
                 </div>
               </div>
-
-              <div className="pt-2 border-t border-[#eaf2fc] text-[11px] text-[#657894] flex items-center justify-between">
-                <span className="font-semibold text-[#10233f]">
-                  {currentUser.position}
-                </span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#eff6ff] text-blue-700">
-                  {isAdmin ? 'Admin' : (currentUser as any).deptShort}
-                </span>
+              <div className="p-1.5">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    setShowProfile(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-[#10233f] hover:bg-[#f0f6ff]"
+                >
+                  <UserRound className="h-4 w-4 text-blue-600" />
+                  <span className="flex-1">View my profile</span>
+                  <span className="text-[10px] text-[#8494aa]">Details</span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    logout();
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Sign out</span>
+                </button>
               </div>
             </div>
           )}
         </div>
+
+        {showProfile && <ProfileModal onClose={() => setShowProfile(false)} onNavigate={onNavigate} />}
       </div>
     </header>
   );

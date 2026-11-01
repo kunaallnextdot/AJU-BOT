@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { FacultyMember, LeaveRequest } from '../types';
+import { AcademicHoliday, AdminUser, FacultyMember, LeaveRequest } from '../types';
 
 // import.meta.env is undefined when this file is imported by the Node seed script
 const url = import.meta.env?.VITE_SUPABASE_URL as string | undefined;
@@ -82,6 +82,9 @@ export interface LeaveRow {
   status: LeaveRequest['status'];
   created_at: string;
   reviewed_at: string | null;
+  // Added by 20261102090000_admins_routing_holidays.sql
+  approver_id?: string | null;
+  reviewed_by?: string | null;
 }
 
 export const leaveToRow = (l: LeaveRequest): LeaveRow => ({
@@ -99,6 +102,9 @@ export const leaveToRow = (l: LeaveRequest): LeaveRow => ({
   status: l.status,
   created_at: l.createdAt,
   reviewed_at: l.reviewedAt ?? null,
+  // Only sent once known, so writes still work against a database without these columns
+  ...(l.approverId !== undefined && { approver_id: l.approverId }),
+  ...(l.reviewedBy !== undefined && { reviewed_by: l.reviewedBy }),
 });
 
 export const rowToLeave = (r: LeaveRow): LeaveRequest => ({
@@ -116,7 +122,34 @@ export const rowToLeave = (r: LeaveRow): LeaveRequest => ({
   status: r.status,
   createdAt: r.created_at,
   reviewedAt: r.reviewed_at,
+  approverId: r.approver_id,
+  reviewedBy: r.reviewed_by,
 });
+
+// ---------- admins & holidays (read-only from the app) ----------
+
+export interface AdminRow {
+  id: string;
+  name: string;
+  email: string;
+  position: string;
+  avatar_initials: string;
+  departments: string[] | null;
+  is_active: boolean;
+}
+
+export const rowToAdmin = (r: AdminRow): AdminUser => ({
+  id: r.id,
+  name: r.name,
+  role: 'admin',
+  email: r.email,
+  position: r.position,
+  avatarInitials: r.avatar_initials,
+  departments: r.departments,
+  isActive: r.is_active,
+});
+
+export type HolidayRow = AcademicHoliday;
 
 // ---------- realtime ----------
 

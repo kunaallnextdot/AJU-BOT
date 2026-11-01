@@ -104,7 +104,7 @@ const MainAppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#eef5ff] text-[#10233f] flex flex-col selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-[var(--bg-main)] text-[#10233f] flex flex-col selection:bg-blue-100 selection:text-blue-900">
       {/* Persistent role-based navigation */}
       <Sidebar
         currentTab={isAdmin ? adminTab : facultyTab}
